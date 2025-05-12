@@ -118,6 +118,23 @@ class Enterprise(AbstractAgent):
     class Meta(AbstractAgent.Meta):
         rdf_type = "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#Enterprise"
         depth = 1
+        serializer_fields = [
+            "@id",
+            "name",
+            "email",
+            "logo",
+            "logo_url",
+            "promo_image_url",
+            "phone_number",
+            "description",
+            "long_description",
+            "contact_name",
+            "VATnumber",
+            "VATstatus",
+            "addresses",
+            "social_medias",
+            "affiliates",
+        ]
         nested_fields = ["addresses", "social_medias", "affiliates"]
 
     def __str__(self):
@@ -138,10 +155,12 @@ class Enterprise(AbstractAgent):
 
 
 class EnterpriseAddress(AbstractAddress):
-    # TODO: should be rendered as hasAddresses
+    # TODO: should be rendered as hasAddresses. Add related_rdf_type property?
     address_of = fields.ForeignKey(
         Enterprise,
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#addressOf",
+        # TODO: related_rdf_type
+        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasAddress",
+        # rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#addressOf",
         blank=True,
         null=True,
         related_name="addresses",
@@ -150,6 +169,7 @@ class EnterpriseAddress(AbstractAddress):
 
     class Meta(AbstractAddress.Meta):
         rdf_type = "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#Address"
+        serializer_fields = ["@id", "address_of"]
 
     def __str__(self):
         return f"{self.address_of} address"
@@ -177,6 +197,7 @@ class SocialMedia(Model):
 
     class Meta(Model.Meta):
         rdf_type = "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#SocialMedia"
+        serializer_fields = ["@id", "enterprise", "name", "url"]
 
     def __str__(self):
         return f"{self.enterprise}: {self.name}"
@@ -208,6 +229,17 @@ class Person(AbstractAgent):
 
     class Meta:
         rdf_type = "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#Person"
+        serializer_fields = [
+            "@id",
+            "affiliated_to",
+            "first_name",
+            "last_name",
+            "email",
+            "logo",
+            "logo_url",
+            "promo_image_url",
+            "phone_number",
+        ]
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
