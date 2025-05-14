@@ -1,3 +1,4 @@
+import logging
 import requests
 
 from django.conf import settings
@@ -16,6 +17,9 @@ from data_food_consortium.proxy.keycloak import (
 RDF_TYPE_PREDICATE = URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
 
 
+logger = logging.getLogger(__name__)
+
+
 class ResourceServerClient:
     """
     Manages the proxy's connection to a data source, authenticated with Keycloak.
@@ -28,21 +32,20 @@ class ResourceServerClient:
 
     def request_all_scopes(self):
         for scope in settings.DFC_KEYCLOAK_READ_SCOPES:
-            # TODO: make a log of failures
             try:
                 self.request_scope(scope)
             except KeycloakAuthenticationException as e:
                 msg = f"ERR authenticating dataserver {self.dataserver_url} with Keycloak, while requesting {scope}"
-                print(msg)
-                print(str(e))
+                logger.error(msg)
+                logger.error(str(e))
             except requests.exceptions.RequestException as e:
                 msg = f"ERR requesting a scope {scope} from dataserver {self.dataserver_url}"
-                print(msg)
-                print(str(e))
+                logger.error(msg)
+                logger.error(str(e))
             except (ParserError, ValueError, TypeError) as e:
                 msg = f"ERR parsing response from dataserver {self.dataserver_url} on scope {scope}"
-                print(msg)
-                print(str(e))
+                logger.error(msg)
+                logger.error(str(e))
 
     def request_scope(self, scope: str):
         """
@@ -63,14 +66,14 @@ class ResourceServerClient:
         # Parse the returned graph, resolve and import to the relevant models.
         g = Graph()
         g.parse(data=data, format="json-ld")
-        print(f"\n\nEndpoint: {scope}")
+        logger.info(f"\n\nEndpoint: {scope}")
         subjects = set(g.subjects())
 
         for subject in subjects:
             # Ensure that the subject is not a blank node.
             # TODO: allow blank nodes, but transfer their urlid to a global one
             if not isinstance(subject, URIRef):
-                print(f"ERR came across blank node in the input: {subject}")
+                logger.error(f"ERR came across blank node in the input: {subject}")
                 continue
 
             # Evaluate the @type and find a corresponding model that we can store.
@@ -87,7 +90,7 @@ class ResourceServerClient:
                     break
 
             if resolved_model is None:
-                print(
+                logger.error(
                     f"ERR could not resolve a model with configured type_uri {model_types}"
                 )
                 continue
@@ -102,28 +105,26 @@ class ResourceServerClient:
                 value = str(obj) if isinstance(obj, URIRef) else obj.toPython()
                 resource_data[str(pred)] = value
 
-            print("Resolved data " + str(resource_data))
-
             # Map the RDF types to local model names where possible, and resolve foreign keys
             for field in resolved_model._meta._get_fields(forward=True, reverse=True):
                 field_path = f"{resolved_model}.{field.name}"
 
                 if not hasattr(field, "rdf_type"):
                     if field.remote_field is None:
-                        print(
+                        logger.debug(
                             f"Skipping field import {field_path} because it lacks rdf_type"
                         )
                         continue
                     # TODO: related_rdf_type?
                     if not hasattr(field.remote_field, "rdf_type"):
-                        print(
+                        logger.debug(
                             f"Skipping field import {field_path} because remote_field {field.remote_field.name} lacks rdf_type"
                         )
                         continue
                     field.rdf_type = field.remote_field.rdf_type
 
                 if field.rdf_type not in resource_data:
-                    print(
+                    logger.debug(
                         f"Skipping field import {field_path} because {field.rdf_type} is not present in data"
                     )
                     continue
@@ -131,7 +132,7 @@ class ResourceServerClient:
                 # Foreign Keys
                 if field.related_model is not None:
                     if field.related_model._meta.abstract:
-                        print(
+                        logger.debug(
                             f"Skipping field import {field_path} because the related model ({field.related_model}) is abstract"
                         )
                         continue
@@ -175,8 +176,8 @@ class ResourceServerClient:
                     resource_data[field.name] = resource_data.pop(field.rdf_type)
 
             # Use LDPSerializer with the resolved model to save it in our database.
-            print("\n\nCOMMITTING SAVE")
-            print(str(resource_data))
+            logger.debug("\nCOMMITTING SAVE")
+            logger.debug(str(resource_data))
             instance = resolved_model.objects.filter(urlid=resource_data["@id"]).first()
 
             # NOTE: LDPSerializer cannot be used without meta args:
