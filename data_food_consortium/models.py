@@ -3,7 +3,19 @@ from djangoldp.models import Model
 from djangoldp import fields
 
 
-class AbstractAddress(Model):
+class AbstractDFCModel(Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    data_server_source = fields.TextField(
+        help_text="The URL of the dataserver which provided the instance"
+    )
+
+    class Meta(Model.Meta):
+        abstract = True
+        serializer_fields = ["@id", "data_server_source"]
+
+
+class AbstractAddress(AbstractDFCModel):
     city = fields.TextField(
         rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasCity",
         blank=True,
@@ -40,11 +52,11 @@ class AbstractAddress(Model):
         null=True,
     )
 
-    class Meta(Model.Meta):
+    class Meta(AbstractDFCModel.Meta):
         abstract = True
 
 
-class AbstractAgent(Model):
+class AbstractAgent(AbstractDFCModel):
     email = fields.EmailField(
         rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#email",
         blank=True,
@@ -69,7 +81,7 @@ class AbstractAgent(Model):
         null=True,
     )
 
-    class Meta(Model.Meta):
+    class Meta(AbstractDFCModel.Meta):
         abstract = True
 
 
@@ -134,6 +146,7 @@ class Enterprise(AbstractAgent):
             "addresses",
             "social_medias",
             "affiliates",
+            "data_server_source",
         ]
         nested_fields = ["addresses", "social_medias", "affiliates"]
 
@@ -169,13 +182,13 @@ class EnterpriseAddress(AbstractAddress):
 
     class Meta(AbstractAddress.Meta):
         rdf_type = "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#Address"
-        serializer_fields = ["@id", "address_of"]
+        serializer_fields = ["@id", "address_of", "data_server_source"]
 
     def __str__(self):
         return f"{self.address_of} address"
 
 
-class SocialMedia(Model):
+class SocialMedia(AbstractDFCModel):
     enterprise = fields.ForeignKey(
         Enterprise,
         rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasSocialMedia",
@@ -195,9 +208,9 @@ class SocialMedia(Model):
         null=True,
     )
 
-    class Meta(Model.Meta):
+    class Meta(AbstractDFCModel.Meta):
         rdf_type = "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#SocialMedia"
-        serializer_fields = ["@id", "enterprise", "name", "url"]
+        serializer_fields = ["@id", "enterprise", "name", "url", "data_server_source"]
 
     def __str__(self):
         return f"{self.enterprise}: {self.name}"
@@ -239,6 +252,7 @@ class Person(AbstractAgent):
             "logo_url",
             "promo_image_url",
             "phone_number",
+            "data_server_source",
         ]
 
     def __str__(self):
