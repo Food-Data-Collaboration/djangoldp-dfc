@@ -2,6 +2,7 @@ import logging
 import requests
 
 from django.conf import settings
+from django.utils import timezone
 from rdflib import Graph, URIRef
 from rdflib.exceptions import ParserError
 
@@ -69,6 +70,8 @@ class ResourceServerClient:
         logger.info(f"\n\nEndpoint: {scope}")
         subjects = set(g.subjects())
 
+        import_started_at = timezone.now()
+
         for subject in subjects:
             # Ensure that the subject is not a blank node.
             # TODO: allow blank nodes, but transfer their urlid to a global one
@@ -96,7 +99,11 @@ class ResourceServerClient:
                 continue
 
             # Parsing the graph into serializable data for our model
-            resource_data = {"@id": str(subject), "@type": resolved_type_uri}
+            resource_data = {
+                "@id": str(subject),
+                "@type": resolved_type_uri,
+                "data_server_source": endpoint,
+            }
             for pred, obj in g.predicate_objects(subject):
                 if pred == RDF_TYPE_PREDICATE:
                     continue
@@ -194,3 +201,11 @@ class ResourceServerClient:
             serializer = serializer_class(instance, data=resource_data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
+
+            # Attempt to remove any implicitly deleted data (data previously returned on this endpoint now missing).
+            deleted = resolved_model.objects.filter(
+                updated_at__lt=import_started_at, data_server_source=endpoint
+            ).delete()
+            logger.info(
+                f"Deleted {deleted} instances of {resolved_model} during cleanup on data source {endpoint}"
+            )
