@@ -22,3 +22,7 @@ To configure the dataservers in the federation, please override the following in
 * `DFC_KEYCLOAK_READ_SCOPES`. The scopes to scrape (e.g. `ReadEnterprise`). The available scopes are configured in your Keycloak Realm.
 
 To test your configuration, please run the command `python manage.py refresh_from_cache`.
+
+### Automated updates of live data
+
+In the current version of this package, the recommended approach to synchronising the proxy to its' dataserver federation is to schedule the `refresh_from_cache` command to run (for example) daily or weekly.
