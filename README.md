@@ -10,7 +10,7 @@ The model definitions provide a full implementation of the [DFC business ontolog
 
 Each proxy operates as a cache of the data from one or several DFC sources. The package proposes a solution for supporting this cache out-of-the-box, using a management command that can be launched manually and via a cronjob.
 
-### Configuration
+### Configuration
 
 To use live data with your application you will need to configure Keycloak. Before using the features described please set the following environment variables:
 * `KEYCLOAK_URL`
@@ -23,6 +23,6 @@ To configure the dataservers in the federation, please override the following in
 
 To test your configuration, please run the command `python manage.py refresh_from_cache`.
 
-### Automated updates of live data
+### Automated updates of live data
 
 In the current version of this package, the recommended approach to synchronising the proxy to its' dataserver federation is to schedule the `refresh_from_cache` command to run (for example) daily or weekly.
