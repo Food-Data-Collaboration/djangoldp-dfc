@@ -2,11 +2,11 @@
 
 The objective of this package is to provide DjangoLDP applications using it with all of the tools they need to run a Data Food Consortium (DFC) Proxy.
 
-## Models
+## Automated updates of live data
 
 The model definitions provide a full implementation of the [DFC business ontology](https://raw.githubusercontent.com/datafoodconsortium/ontology/refs/heads/master/src/DFC_BusinessOntology.owl). The resulting viewset is able to perform CRUD operations on the ontology data, parsed and serialized in JSON-LD.
 
-## Access to live data
+##  Access to live data
 
 Each proxy operates as a cache of the data from one or several DFC sources. The package proposes a solution for supporting this cache out-of-the-box, using a management command that can be launched manually and via a cronjob.
 
