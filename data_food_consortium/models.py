@@ -168,12 +168,10 @@ class Enterprise(AbstractAgent):
 
 
 class EnterpriseAddress(AbstractAddress):
-    # TODO: should be rendered as hasAddresses. Add related_rdf_type property?
     address_of = fields.ForeignKey(
         Enterprise,
-        # TODO: related_rdf_type
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasAddress",
-        # rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#addressOf",
+        related_rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasAddress",
+        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#addressOf",
         blank=True,
         null=True,
         related_name="addresses",
@@ -191,7 +189,8 @@ class EnterpriseAddress(AbstractAddress):
 class SocialMedia(AbstractDFCModel):
     enterprise = fields.ForeignKey(
         Enterprise,
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasSocialMedia",
+        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#socialMediaOf",
+        related_rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasSocialMedia",
         blank=True,
         null=True,
         related_name="social_medias",
@@ -222,6 +221,7 @@ class Person(AbstractAgent):
     affiliated_to = fields.ForeignKey(
         Enterprise,
         rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#affiliatedTo",
+        related_rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#affiliates",
         blank=True,
         null=True,
         related_name="affiliates",
