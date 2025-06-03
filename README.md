@@ -1,6 +1,6 @@
 # Data Food Consortium Proxy Application
 
-The objective of this package is to provide DjangoLDP applications using it with all of the tools they need to run a Data Food Consortium (DFC) Proxy.
+The objective of this package is to provide DjangoLDP applications with all of the tools they need to run a Data Food Consortium (DFC) Proxy.
 
 ## Automated updates of live data
 
