@@ -18,7 +18,7 @@ DFC_DATASERVER_URLS = ["https://data-server.cqcm.startinblox.com"]
 # A discovery mechanism was proposed
 # https://git.startinblox.com/projets/projets-clients/open-food-network/data-permissioning-module/-/issues/12#note_90778
 DFC_KEYCLOAK_READ_SCOPES = {
-    "ReadEnterprise": "/protected",
-    "ReadOrders": "/protected",
-    "ReadProducts": "/protected",
+    "ReadEnterprise": "/enterprises",
+    # "ReadOrders": "/orders", TODO: not implemented on the staging data-server
+    # "ReadProducts": "/products", TODO: not implemented on the staging data-server
 }
