@@ -180,7 +180,18 @@ class EnterpriseAddress(AbstractAddress):
 
     class Meta(AbstractAddress.Meta):
         rdf_type = "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#Address"
-        serializer_fields = ["@id", "address_of", "data_server_source"]
+        serializer_fields = [
+            "@id",
+            "address_of",
+            "data_server_source",
+            "city",
+            "country",
+            "latitude",
+            "longitude",
+            "postcode",
+            "region",
+            "street",
+        ]
 
     def __str__(self):
         return f"{self.address_of} address"
