@@ -19,7 +19,8 @@ class Command(BaseCommand):
         product_types = self.gather_product_types()
 
         # Remove all product type candidates that are already configured on the existing enum.
-        new_product_types = product_types.difference(set(ProductType.values))
+        new_product_types = list(product_types.difference(set(ProductType.values)))
+        new_product_types.sort()
         if len(new_product_types):
             print(
                 f"{len(new_product_types)} new produdct types found. Please copy the following values into the TextChoices"
@@ -30,9 +31,9 @@ class Command(BaseCommand):
 
         # Format the product type candidates as an enum.
         for pt in new_product_types:
-            choice_name = pt.replace('"', "").split("#")[-1]
+            choice_name = pt.split("#")[-1]
             print(
-                f'    {choice_name.replace("-", "_").upper()} = ({pt}, "{choice_name.replace("-", " ").capitalize()}")'
+                f'    {choice_name.replace("-", "_").upper()} = ("{pt}", "{choice_name.replace("-", " ").capitalize()}")'
             )
 
         # Tests the assumptions of this script to check for changes in the ontology format.
