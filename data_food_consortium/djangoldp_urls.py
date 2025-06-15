@@ -4,7 +4,11 @@ from .views import EnterpriseViewset
 
 urlpatterns = [
     path(
-        "enterpsies/",
-        EnterpriseViewset.urls(model_prefix="enterprise", model=Enterprise),
+        "enterprises/",
+        EnterpriseViewset.urls(
+            model_prefix="enterprise",
+            model=Enterprise,
+            nested_fields=["supplied_products"],
+        ),
     )
 ]

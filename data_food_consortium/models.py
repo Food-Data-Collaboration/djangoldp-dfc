@@ -372,7 +372,7 @@ class SuppliedProduct(AbstractProduct):
         related_rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#supplies",
         blank=True,
         null=True,
-        related_name="supplies",
+        related_name="supplied_products",
         on_delete=models.SET_NULL,
     )
 
