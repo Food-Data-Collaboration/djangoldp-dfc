@@ -9,12 +9,14 @@ class AbstractDFCModel(Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     data_server_source = fields.TextField(
-        help_text="The URL of the dataserver which provided the instance"
+        help_text="The URL of the dataserver which provided the instance",
+        blank=True,
+        null=True,
     )
 
     class Meta(Model.Meta):
         abstract = True
-        serializer_fields = ["@id", "data_server_source"]
+        serializer_fields = ["@id"]
 
 
 class AbstractAddress(AbstractDFCModel):
@@ -148,7 +150,6 @@ class Enterprise(AbstractAgent):
             "addresses",
             "social_medias",
             "affiliates",
-            "data_server_source",
         ]
         nested_fields = ["addresses", "social_medias", "affiliates"]
         disable_url = True  # Disables DjangoLDP auto-url generation
@@ -186,7 +187,6 @@ class EnterpriseAddress(AbstractAddress):
         serializer_fields = [
             "@id",
             "address_of",
-            "data_server_source",
             "city",
             "country",
             "latitude",
@@ -223,7 +223,7 @@ class SocialMedia(AbstractDFCModel):
 
     class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:SocialMedia"
-        serializer_fields = ["@id", "enterprise", "name", "url", "data_server_source"]
+        serializer_fields = ["@id", "enterprise", "name", "url"]
 
     def __str__(self):
         return f"{self.enterprise}: {self.name}"
@@ -266,7 +266,6 @@ class Person(AbstractAgent):
             "logo_url",
             "promo_image_url",
             "phone_number",
-            "data_server_source",
         ]
 
     def __str__(self):
