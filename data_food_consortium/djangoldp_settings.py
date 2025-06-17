@@ -22,3 +22,5 @@ DFC_KEYCLOAK_READ_SCOPES = {
     # "ReadOrders": "/orders", TODO: not implemented on the staging data-server
     # "ReadProducts": "/products", TODO: not implemented on the staging data-server
 }
+
+LDP_RDF_CONTEXT = "https://cdn.startinblox.com/owl/dfc.jsonld"

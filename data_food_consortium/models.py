@@ -19,37 +19,37 @@ class AbstractDFCModel(Model):
 
 class AbstractAddress(AbstractDFCModel):
     city = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasCity",
+        rdf_type="dfc-b:hasCity",
         blank=True,
         null=True,
     )
     country = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasCountry",
+        rdf_type="dfc-b:hasCountry",
         blank=True,
         null=True,
     )
     latitude = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#latitude",
+        rdf_type="dfc-b:latitude",
         blank=True,
         null=True,
     )
     longitude = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#longitude",
+        rdf_type="dfc-b:longitude",
         blank=True,
         null=True,
     )
     postcode = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasPostalCode",
+        rdf_type="dfc-b:hasPostalCode",
         blank=True,
         null=True,
     )
     region = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#region",
+        rdf_type="dfc-b:region",
         blank=True,
         null=True,
     )
     street = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasStreet",
+        rdf_type="dfc-b:hasStreet",
         blank=True,
         null=True,
     )
@@ -60,13 +60,13 @@ class AbstractAddress(AbstractDFCModel):
 
 class AbstractAgent(AbstractDFCModel):
     email = fields.EmailField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#email",
+        rdf_type="dfc-b:email",
         blank=True,
         null=True,
     )  # xsd:String
     # TODO: revisit max_length parameter based on explicit or implicit limit of the ontology
     logo = fields.LDPUrlField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#logo",
+        rdf_type="dfc-b:logo",
         max_length=255,
         blank=True,
         null=True,
@@ -78,7 +78,7 @@ class AbstractAgent(AbstractDFCModel):
         rdf_type="ofn:promo_image_url", max_length=255, blank=True, null=True
     )
     phone_number = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasPhoneNumber",
+        rdf_type="dfc-b:hasPhoneNumber",
         blank=True,
         null=True,
     )
@@ -89,18 +89,18 @@ class AbstractAgent(AbstractDFCModel):
 
 class Enterprise(AbstractAgent):
     enterpriseid = fields.LDPUrlField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#enterpriseID",
+        rdf_type="dfc-b:enterpriseID",
         blank=True,
         null=True,
         help_text="Unique Id of the Enterprise",
     )  # xsd:String
     name = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#name",
+        rdf_type="dfc-b:name",
         blank=True,
         null=True,
     )  # xsd:String
     description = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasDescription",
+        rdf_type="dfc-b:hasDescription",
         blank=True,
         null=True,
     )
@@ -114,7 +114,7 @@ class Enterprise(AbstractAgent):
         help_text="Name of the primary contact (from the OFN ontology)",
     )
     VATnumber = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#VATnumber",
+        rdf_type="dfc-b:VATnumber",
         blank=True,
         null=True,
         help_text=(
@@ -123,14 +123,14 @@ class Enterprise(AbstractAgent):
         ),
     )  # xsd:String
     VATstatus = fields.BooleanField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#VATStatus",
+        rdf_type="dfc-b:VATStatus",
         default=False,
         null=True,
         help_text="Indicates whether the Enterprise charges VAT or not",
     )  # xsd:Boolean
 
     class Meta(AbstractAgent.Meta):
-        rdf_type = "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#Enterprise"
+        rdf_type = "dfc-b:Enterprise"
         depth = 1
         serializer_fields = [
             "@id",
@@ -173,8 +173,8 @@ class Enterprise(AbstractAgent):
 class EnterpriseAddress(AbstractAddress):
     address_of = fields.ForeignKey(
         Enterprise,
-        related_rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasAddress",
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#addressOf",
+        related_rdf_type="dfc-b:hasAddress",
+        rdf_type="dfc-b:addressOf",
         blank=True,
         null=True,
         related_name="addresses",
@@ -182,7 +182,7 @@ class EnterpriseAddress(AbstractAddress):
     )
 
     class Meta(AbstractAddress.Meta):
-        rdf_type = "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#Address"
+        rdf_type = "dfc-b:Address"
         serializer_fields = [
             "@id",
             "address_of",
@@ -203,26 +203,26 @@ class EnterpriseAddress(AbstractAddress):
 class SocialMedia(AbstractDFCModel):
     enterprise = fields.ForeignKey(
         Enterprise,
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#socialMediaOf",
-        related_rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasSocialMedia",
+        rdf_type="dfc-b:socialMediaOf",
+        related_rdf_type="dfc-b:hasSocialMedia",
         blank=True,
         null=True,
         related_name="social_medias",
         on_delete=models.CASCADE,
     )
     name = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#name",
+        rdf_type="dfc-b:name",
         blank=True,
         null=True,
     )  # xsd:String
     url = fields.LDPUrlField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#URL",
+        rdf_type="dfc-b:URL",
         blank=True,
         null=True,
     )
 
     class Meta(AbstractDFCModel.Meta):
-        rdf_type = "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#SocialMedia"
+        rdf_type = "dfc-b:SocialMedia"
         serializer_fields = ["@id", "enterprise", "name", "url", "data_server_source"]
 
     def __str__(self):
@@ -234,28 +234,28 @@ class Person(AbstractAgent):
     # this contradicts the ontology
     affiliated_to = fields.ForeignKey(
         Enterprise,
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#affiliatedTo",
-        related_rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#affiliates",
+        rdf_type="dfc-b:affiliatedTo",
+        related_rdf_type="dfc-b:affiliates",
         blank=True,
         null=True,
         related_name="affiliates",
         on_delete=models.SET_NULL,
     )
     first_name = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#firstName",
+        rdf_type="dfc-b:firstName",
         blank=True,
         null=True,
     )
     last_name = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#familyName",
+        rdf_type="dfc-b:familyName",
         blank=True,
         null=True,
     )
-    # TODO: a person can be the https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#mainContactOf an Enterprise or a PhysicalPlace.
+    # TODO: a person can be the dfc-b:mainContactOf an Enterprise or a PhysicalPlace.
     # This will need to be a generic foreign key (ManyToMany)
 
     class Meta:
-        rdf_type = "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#Person"
+        rdf_type = "dfc-b:Person"
         serializer_fields = [
             "@id",
             "affiliated_to",
@@ -297,24 +297,24 @@ class AbstractProduct(AbstractDFCModel):
     """
 
     name = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#name",
+        rdf_type="dfc-b:name",
         blank=True,
         null=True,
     )  # xsd:String
     description = fields.TextField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#description",
+        rdf_type="dfc-b:description",
         blank=True,
         null=True,
     )
     has_type = fields.CharField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasType",
+        rdf_type="dfc-b:hasType",
         verbose_name="has_type",
         choices=ProductType.choices,
         blank=True,
         null=True,
     )
     url = fields.LDPUrlField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#URL",
+        rdf_type="dfc-b:URL",
         max_length=255,
         blank=True,
         null=True,
@@ -322,9 +322,9 @@ class AbstractProduct(AbstractDFCModel):
 
     # TODO: Currently no serialization of reverse in the relationship. Wanted to avoid polymorphism if possible, but a product can be a
     # variant of a product, or a product group, for example
-    # https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasVariant
+    # dfc-b:hasVariant
     is_variant_of = fields.LDPUrlField(
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#isVariantOf",
+        rdf_type="dfc-b:isVariantOf",
         max_length=255,
         blank=True,
         null=True,
@@ -357,7 +357,7 @@ class AbstractProduct(AbstractDFCModel):
 
     class Meta:
         abstract = True
-        rdf_type = "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#DefinedProduct"
+        rdf_type = "dfc-b:DefinedProduct"
 
 
 class SuppliedProduct(AbstractProduct):
@@ -368,8 +368,8 @@ class SuppliedProduct(AbstractProduct):
 
     supplied_by = fields.ForeignKey(
         Enterprise,
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#suppliedBy",
-        related_rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#supplies",
+        rdf_type="dfc-b:suppliedBy",
+        related_rdf_type="dfc-b:supplies",
         blank=True,
         null=True,
         related_name="supplied_products",
@@ -380,7 +380,7 @@ class SuppliedProduct(AbstractProduct):
     # produces: AsPlannedTransformation (via TechnicalProduct)
 
     class Meta(AbstractProduct.Meta):
-        rdf_type = "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#SuppliedProduct"
+        rdf_type = "dfc-b:SuppliedProduct"
         serializer_fields = [
             "@id",
             "name",
@@ -414,8 +414,8 @@ class LocalizedProduct(AbstractDFCModel):
 
     reference_of = fields.ForeignKey(
         SuppliedProduct,
-        related_rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#hasReference",
-        rdf_type="https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#referenceOf",
+        related_rdf_type="dfc-b:hasReference",
+        rdf_type="dfc-b:referenceOf",
         blank=True,
         null=True,
         related_name="localized_products",
@@ -424,7 +424,7 @@ class LocalizedProduct(AbstractDFCModel):
     # TODO: foreign key to locality
 
     class Meta(AbstractDFCModel.Meta):
-        rdf_type = "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#LocalizedProduct"
+        rdf_type = "dfc-b:LocalizedProduct"
         serializer_fields = ["@id", "reference_of"]
         disable_url = True  # Disables DjangoLDP auto-url generation
 

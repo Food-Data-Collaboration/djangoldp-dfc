@@ -1096,7 +1096,7 @@ class Migration(migrations.Migration):
             ],
             options={
                 "abstract": False,
-                "rdf_type": "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#SuppliedProduct",
+                "rdf_type": "dfc-b:SuppliedProduct",
                 "serializer_fields": [
                     "@id",
                     "name",
@@ -1126,7 +1126,7 @@ class Migration(migrations.Migration):
             ],
             options={
                 "abstract": False,
-                "rdf_type": "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#DefinedProduct",
+                "rdf_type": "dfc-b:DefinedProduct",
             },
             bases=("data_food_consortium.suppliedproduct",),
         ),
@@ -1184,7 +1184,7 @@ class Migration(migrations.Migration):
             options={
                 "abstract": False,
                 "default_permissions": {"delete", "view", "change", "add", "control"},
-                "rdf_type": "https://github.com/datafoodconsortium/ontology/releases/latest/download/DFC_BusinessOntology.owl#LocalizedProduct",
+                "rdf_type": "dfc-b:LocalizedProduct",
                 "serializer_fields": ["@id", "reference_of"],
                 "depth": 0,
                 "disable_url": True,
