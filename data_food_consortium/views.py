@@ -1,4 +1,4 @@
-from djangoldp.views import LDPViewSet
+from djangoldp.views.ldp_viewset import LDPViewSet
 
 
 class EnterpriseViewset(LDPViewSet):
