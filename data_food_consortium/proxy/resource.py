@@ -81,10 +81,15 @@ class ResourceServerClient:
 
             # Evaluate the @type and find a corresponding model that we can store.
             resolved_model = None
-            model_types = [
-                str(type_uri) for type_uri in g.objects(subject, RDF_TYPE_PREDICATE)
-            ]
+            model_types = []
             resolved_type_uri = None
+            for type_uri in g.objects(subject, RDF_TYPE_PREDICATE):
+                try:
+                    model_types += [g.qname(type_uri)]
+                except (ValueError, KeyError) as e:
+                    logger.warn(
+                        f"Unable to use compacted form of {type_uri}. RDFLib error: {e}"
+                    )
 
             for type_uri in model_types:
                 resolved_model = Model.get_subclass_with_rdf_type(type_uri)
