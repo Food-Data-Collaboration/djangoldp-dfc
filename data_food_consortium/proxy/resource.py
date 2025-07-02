@@ -117,6 +117,15 @@ class ResourceServerClient:
                 value = str(obj) if isinstance(obj, URIRef) else obj.toPython()
                 resource_data[str(pred)] = value
 
+                # Create a copy so that we can tolerate compacted and expanded forms
+                # LDPSerializer will ignore non-mapped values later
+                try:
+                    resource_data[g.qname(pred)] = value
+                except (ValueError, KeyError) as e:
+                    logger.warn(
+                        f"Unable to use compacted form of {pred}. RDFLib error: {e}"
+                    )
+
             # Map the RDF types to local model names where possible, and resolve foreign keys
             for field in resolved_model._meta._get_fields(forward=True, reverse=True):
                 field_path = f"{resolved_model}.{field.name}"
