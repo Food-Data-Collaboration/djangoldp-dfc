@@ -107,7 +107,6 @@ class ResourceServerClient:
             resource_data = {
                 "@id": str(subject),
                 "@type": resolved_type_uri,
-                "data_server_source": endpoint,
             }
             for pred, obj in g.predicate_objects(subject):
                 if pred == RDF_TYPE_PREDICATE:
@@ -213,7 +212,9 @@ class ResourceServerClient:
             )
             serializer = serializer_class(instance, data=resource_data)
             serializer.is_valid(raise_exception=True)
-            serializer.save()
+            instance = serializer.save()
+            instance.data_server_source = endpoint
+            instance.save()
 
             # Attempt to remove any implicitly deleted data (data previously returned on this endpoint now missing).
             deleted = resolved_model.objects.filter(
