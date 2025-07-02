@@ -158,13 +158,13 @@ class ResourceServerClient:
                         )
                         continue
 
-                    instance_urlid = resource_data.pop(field.rdf_type)
-                    instance = field.related_model.objects.filter(
-                        urlid=instance_urlid
+                    related_instance_urlid = resource_data.pop(field.rdf_type)
+                    related_instance = field.related_model.objects.filter(
+                        urlid=related_instance_urlid
                     ).first()
                     existing_data = {}
 
-                    if instance is not None:
+                    if related_instance is not None:
                         # NOTE: LDPSerializer cannot be used without meta args:
                         #   https://git.startinblox.com/djangoldp-packages/djangoldp/-/issues/277
                         meta_args = {
@@ -176,14 +176,14 @@ class ResourceServerClient:
                         serializer_class = type(LDPSerializer)(
                             "LDPSerializer", (LDPSerializer,), {"Meta": meta_class}
                         )
-                        existing_data = serializer_class(instance).data
+                        existing_data = serializer_class(related_instance).data
 
                     if field.one_to_many or field.many_to_many:
-                        # TODO: instance_urlid may not be a single value, since this is a many field
+                        # TODO: related_instance_urlid may not be a single value, since this is a many field
                         resource_data[field.name] = {
                             "ldp:contains": [
                                 {
-                                    "@id": instance_urlid,
+                                    "@id": related_instance_urlid,
                                     field.field.name: {"@id": resource_data["@id"]},
                                 }
                                 | existing_data
@@ -191,14 +191,13 @@ class ResourceServerClient:
                         }
                     else:
                         resource_data[field.name] = {
-                            "@id": instance_urlid
+                            "@id": related_instance_urlid
                         } | existing_data
                 else:
                     resource_data[field.name] = resource_data.pop(field.rdf_type)
 
             # Use LDPSerializer with the resolved model to save it in our database.
-            logger.debug("\nCOMMITTING SAVE")
-            logger.debug(str(resource_data))
+            logger.debug(f"\nCOMMITTING SAVE: {resource_data}")
             instance = resolved_model.objects.filter(urlid=resource_data["@id"]).first()
 
             # NOTE: LDPSerializer cannot be used without meta args:
