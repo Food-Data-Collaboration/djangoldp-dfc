@@ -104,8 +104,10 @@ class ResourceServerClient:
                 continue
 
             # Parsing the graph into serializable data for our model
+            instance_urlid = str(
+                subject
+            )  # will be set after the serializer is processed to avoid errors
             resource_data = {
-                "@id": str(subject),
                 "@type": resolved_type_uri,
             }
             for pred, obj in g.predicate_objects(subject):
@@ -184,7 +186,7 @@ class ResourceServerClient:
                             "ldp:contains": [
                                 {
                                     "@id": related_instance_urlid,
-                                    field.field.name: {"@id": resource_data["@id"]},
+                                    field.field.name: {"@id": instance_urlid},
                                 }
                                 | existing_data
                             ]
@@ -198,7 +200,7 @@ class ResourceServerClient:
 
             # Use LDPSerializer with the resolved model to save it in our database.
             logger.debug(f"\nCOMMITTING SAVE: {resource_data}")
-            instance = resolved_model.objects.filter(urlid=resource_data["@id"]).first()
+            instance = resolved_model.objects.filter(urlid=instance_urlid).first()
 
             # NOTE: LDPSerializer cannot be used without meta args:
             #   https://git.startinblox.com/djangoldp-packages/djangoldp/-/issues/277
@@ -211,12 +213,16 @@ class ResourceServerClient:
             serializer_class = type(LDPSerializer)(
                 "LDPSerializer", (LDPSerializer,), {"Meta": meta_class}
             )
+            if instance is None:
+                # Must set urlid before
+                instance = resolved_model.objects.create(
+                    urlid=instance_urlid,
+                    data_server_source=endpoint,
+                    allow_create_backlink=False,
+                )
             serializer = serializer_class(instance, data=resource_data)
             serializer.is_valid(raise_exception=True)
             instance = serializer.save()
-            instance.urlid = resource_data["@id"]
-            instance.data_server_source = endpoint
-            instance.save()
 
             # Attempt to remove any implicitly deleted data (data previously returned on this endpoint now missing).
             deleted = resolved_model.objects.filter(
