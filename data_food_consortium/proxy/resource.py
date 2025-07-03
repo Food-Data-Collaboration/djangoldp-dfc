@@ -128,36 +128,37 @@ class ResourceServerClient:
             # Map the RDF types to local model names where possible, and resolve foreign keys
             for field in resolved_model._meta._get_fields(forward=True, reverse=True):
                 field_path = f"{resolved_model}.{field.name}"
+                rdf_type = None
 
-                if not hasattr(field, "rdf_type"):
-                    if field.remote_field is None:
-                        logger.debug(
-                            f"Skipping field import {field_path} because it lacks rdf_type"
-                        )
-                        continue
-                    # TODO: related_rdf_type?
-                    if not hasattr(field.remote_field, "rdf_type"):
-                        logger.debug(
-                            f"Skipping field import {field_path} because remote_field {field.remote_field.name} lacks rdf_type"
-                        )
-                        continue
-                    field.rdf_type = field.remote_field.rdf_type
+                # Prioritise related RDF type on a relation
+                if field.remote_field is not None and hasattr(
+                    field.remote_field, "related_rdf_type"
+                ):
+                    rdf_type = field.remote_field.related_rdf_type
+                # Otherwise the field must have an RDF type configured to be considered
+                elif not hasattr(field, "rdf_type"):
+                    logger.warn(
+                        f"Skipping field import {field_path} because it lacks rdf_type"
+                    )
+                    continue
+                else:
+                    rdf_type = field.rdf_type
 
-                if field.rdf_type not in resource_data:
-                    logger.debug(
-                        f"Skipping field import {field_path} because {field.rdf_type} is not present in data"
+                if rdf_type not in resource_data:
+                    logger.warn(
+                        f"Skipping field import {field_path} because {rdf_type} is not present in data"
                     )
                     continue
 
                 # Foreign Keys
                 if field.related_model is not None:
                     if field.related_model._meta.abstract:
-                        logger.debug(
+                        logger.warn(
                             f"Skipping field import {field_path} because the related model ({field.related_model}) is abstract"
                         )
                         continue
 
-                    related_instance_urlid = resource_data.pop(field.rdf_type)
+                    related_instance_urlid = resource_data.pop(rdf_type)
                     related_instance = field.related_model.objects.filter(
                         urlid=related_instance_urlid
                     ).first()
@@ -193,7 +194,7 @@ class ResourceServerClient:
                             "@id": related_instance_urlid
                         } | existing_data
                 else:
-                    resource_data[field.name] = resource_data.pop(field.rdf_type)
+                    resource_data[field.name] = resource_data.pop(rdf_type)
 
             # Use LDPSerializer with the resolved model to save it in our database.
             logger.debug(f"\nCOMMITTING SAVE: {resource_data}")
