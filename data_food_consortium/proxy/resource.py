@@ -213,6 +213,7 @@ class ResourceServerClient:
             serializer = serializer_class(instance, data=resource_data)
             serializer.is_valid(raise_exception=True)
             instance = serializer.save()
+            instance.urlid = resource_data["@id"]
             instance.data_server_source = endpoint
             instance.save()
 
