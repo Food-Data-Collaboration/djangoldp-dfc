@@ -1,6 +1,6 @@
 from django.urls import path
-from .models import Enterprise
-from .views import EnterpriseViewset
+from .models import Enterprise, Person
+from .views import EnterpriseViewset, PersonViewset
 
 urlpatterns = [
     path(
@@ -8,7 +8,8 @@ urlpatterns = [
         EnterpriseViewset.urls(
             model_prefix="enterprise",
             model=Enterprise,
-            nested_fields=["supplied_products"],
+            nested_fields=["supplied_products", "social_medias"],
         ),
-    )
+    ),
+    path("persons/", PersonViewset.urls(model_prefix="person", model=Person)),
 ]
