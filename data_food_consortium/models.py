@@ -13,6 +13,7 @@ class AbstractDFCModel(Model):
         blank=True,
         null=True,
     )
+    proxy_of = fields.LDPUrlField(rdf_type="dfc-t:proxyOf", blank=True, null=True)
 
     class Meta(Model.Meta):
         abstract = True
@@ -136,6 +137,7 @@ class Enterprise(AbstractAgent):
         depth = 1
         serializer_fields = [
             "@id",
+            "proxy_of",
             "name",
             "email",
             "logo",
@@ -382,6 +384,7 @@ class SuppliedProduct(AbstractProduct):
         rdf_type = "dfc-b:SuppliedProduct"
         serializer_fields = [
             "@id",
+            "proxy_of",
             "name",
             "description",
             "has_type",
