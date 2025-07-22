@@ -7,9 +7,9 @@
             {% if success %}
                 <p>Form uploaded successfully.</p>
             {% elif form.errors %}
-                <p style="color: #cc0000">
+                <div style="color: #cc0000">
                     {{ form.errors }}
-                </p>
+                </div>
             {% endif %}
             <input type="submit" value="Submit">
         </form>
