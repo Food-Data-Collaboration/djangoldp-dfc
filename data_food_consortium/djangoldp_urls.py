@@ -1,8 +1,9 @@
 from django.urls import path
 from .models import Enterprise, Person
-from .views import EnterpriseViewset, PersonViewset
+from .views import EnterpriseViewset, EnterpriseImportView, PersonViewset
 
 urlpatterns = [
+    path("dfc/enterprise-import/", EnterpriseImportView.as_view(), name="csv_import"),
     path(
         "enterprises/",
         EnterpriseViewset.urls(
