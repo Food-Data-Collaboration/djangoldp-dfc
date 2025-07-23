@@ -30,4 +30,4 @@ class PersonAdmin(DFCModelAdmin):
 
 @admin.register(models.SuppliedProduct)
 class SuppliedProductAdmin(DFCModelAdmin):
-    pass
+    list_display = ["urlid", "proxy_of", "name", "has_type", "supplied_by"]
