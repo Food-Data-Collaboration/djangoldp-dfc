@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from djangoldp_csv.forms import BaseCSVImportForm, FileField
+
 from data_food_consortium.models import Enterprise, EnterpriseAddress, SuppliedProduct
 
 
@@ -12,6 +13,16 @@ class EnterpriseImportForm(BaseCSVImportForm):
     supplied_products = FileField(model_type=SuppliedProduct, required=False)
     enterprises = FileField(model_type=Enterprise, required=False)
     addresses = FileField(model_type=EnterpriseAddress, required=False)
+
+    def _process_csv_fields(self, model, row):
+        fields = super()._process_csv_fields(model, row)
+        if "urlid" in fields:
+            fields["proxy_of"] = fields.pop("urlid")
+        return fields
+
+    def get_unique_kwargs(self, urlid):
+        # Hook for subclass in another library.
+        return {"proxy_of": urlid}
 
     def clean(self):
         super().clean()
