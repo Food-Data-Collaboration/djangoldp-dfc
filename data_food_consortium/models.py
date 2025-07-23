@@ -151,6 +151,7 @@ class Enterprise(AbstractAgent):
             "VATstatus",
             "addresses",
             "social_medias",
+            "supplied_products",
             "affiliates",
         ]
         nested_fields = ["addresses", "social_medias", "affiliates"]
