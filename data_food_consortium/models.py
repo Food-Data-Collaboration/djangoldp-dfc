@@ -152,9 +152,9 @@ class Enterprise(AbstractAgent):
             "addresses",
             "social_medias",
             "supplied_products",
-            "affiliates",
+            "affiliated_to",
         ]
-        nested_fields = ["addresses", "social_medias", "affiliates"]
+        nested_fields = ["addresses", "social_medias", "affiliated_to"]
         disable_url = True  # Disables DjangoLDP auto-url generation
 
     def __str__(self):
@@ -235,13 +235,13 @@ class SocialMedia(AbstractDFCModel):
 class Person(AbstractAgent):
     # TODO: a Person is affiliated to an Enterprise via an EnterpriseGroup, not directly?
     # this contradicts the ontology
-    affiliated_to = fields.ForeignKey(
+    affiliates = fields.ForeignKey(
         Enterprise,
-        rdf_type="dfc-b:affiliatedTo",
-        related_rdf_type="dfc-b:affiliates",
+        rdf_type="dfc-b:affiliates",
+        related_rdf_type="dfc-b:affiliatedTo",
         blank=True,
         null=True,
-        related_name="affiliates",
+        related_name="affiliated_to",
         on_delete=models.SET_NULL,
     )
     first_name = fields.TextField(
@@ -261,7 +261,7 @@ class Person(AbstractAgent):
         rdf_type = "dfc-b:Person"
         serializer_fields = [
             "@id",
-            "affiliated_to",
+            "affiliates",
             "first_name",
             "last_name",
             "email",
