@@ -21,56 +21,24 @@ RDF_TYPE_PREDICATE = URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
 logger = logging.getLogger(__name__)
 
 
-class ResourceServerClient:
+class ProxyRefreshParser:
     """
-    Manages the proxy's connection to a data source, authenticated with Keycloak.
+    Responsible for parsing an RDF-graph containing data to be proxied by a DjangoLDP application.
     """
 
-    dataserver_url = ""
+    raw_data = None
+    graph = None
+    data_server_source = ""
 
-    def __init__(self, dataserver_url):
-        self.dataserver_url = dataserver_url
+    def __init__(self, raw_data, data_server_source):
+        self.raw_data = raw_data
+        self.graph = Graph()
+        self.graph.parse(data=raw_data, format="json-ld")
+        self.data_server_source = data_server_source
 
-    def request_all_scopes(self):
-        for scope in settings.DFC_KEYCLOAK_READ_SCOPES:
-            try:
-                self.request_scope(scope)
-            except KeycloakAuthenticationException as e:
-                msg = f"ERR authenticating dataserver {self.dataserver_url} with Keycloak, while requesting {scope}"
-                logger.error(msg)
-                logger.error(str(e))
-            except requests.exceptions.RequestException as e:
-                msg = f"ERR requesting a scope {scope} from dataserver {self.dataserver_url}"
-                logger.error(msg)
-                logger.error(str(e))
-            except (ParserError, ValueError, TypeError) as e:
-                msg = f"ERR parsing response from dataserver {self.dataserver_url} on scope {scope}"
-                logger.error(msg)
-                logger.error(str(e))
-
-    def request_scope(self, scope: str):
-        """
-        Requests an access token from Keycloak for a given scope, and then requests from the dataserver the associated endpoint.
-
-        :raises KeycloakAuthenticationException: if authentication with Keycloak is unsuccessful
-        :raises RequestException: if dataserver request is unsuccessful
-        """
-        token = KeycloakClient(scope).get_access_token()
-
-        # Each scope has an associated endpoint
-        headers = {"Authorization": f"Bearer {token}"}
-        endpoint = f"{self.dataserver_url}{settings.DFC_KEYCLOAK_READ_SCOPES[scope]}"
-        response = requests.get(endpoint, headers=headers)
-        response.raise_for_status()
-        data = response.json()
-
-        # Parse the returned graph, resolve and import to the relevant models.
-        g = Graph()
-        g.parse(data=data, format="json-ld")
-        logger.info(f"\n\nEndpoint: {scope}")
-        subjects = set(g.subjects())
-
+    def parse(self):
         import_started_at = timezone.now()
+        subjects = set(self.graph.subjects())
 
         for subject in subjects:
             # Ensure that the subject is not a blank node.
@@ -83,9 +51,9 @@ class ResourceServerClient:
             resolved_model = None
             model_types = []
             resolved_type_uri = None
-            for type_uri in g.objects(subject, RDF_TYPE_PREDICATE):
+            for type_uri in self.graph.objects(subject, RDF_TYPE_PREDICATE):
                 try:
-                    model_types += [g.qname(type_uri)]
+                    model_types += [self.graph.qname(type_uri)]
                 except (ValueError, KeyError) as e:
                     logger.warn(
                         f"Unable to use compacted form of {type_uri}. RDFLib error: {e}"
@@ -107,7 +75,7 @@ class ResourceServerClient:
             resource_data = {
                 "@type": resolved_type_uri,
             }
-            for pred, obj in g.predicate_objects(subject):
+            for pred, obj in self.graph.predicate_objects(subject):
                 if pred == RDF_TYPE_PREDICATE:
                     continue
 
@@ -118,7 +86,7 @@ class ResourceServerClient:
                 # Create a copy so that we can tolerate compacted and expanded forms
                 # LDPSerializer will ignore non-mapped values later
                 try:
-                    resource_data[g.qname(pred)] = value
+                    resource_data[self.graph.qname(pred)] = value
                 except (ValueError, KeyError) as e:
                     logger.warn(
                         f"Unable to use compacted form of {pred}. RDFLib error: {e}"
@@ -130,7 +98,7 @@ class ResourceServerClient:
                 # Must set urlid before
                 instance = resolved_model.objects.create(
                     proxy_of=str(subject),
-                    data_server_source=endpoint,
+                    data_server_source=self.data_server_source,
                     allow_create_backlink=False,
                 )
 
@@ -225,8 +193,56 @@ class ResourceServerClient:
 
             # Attempt to remove any implicitly deleted data (data previously returned on this endpoint now missing).
             deleted = resolved_model.objects.filter(
-                updated_at__lt=import_started_at, data_server_source=endpoint
+                updated_at__lt=import_started_at,
+                data_server_source=self.data_server_source,
             ).delete()
             logger.info(
-                f"Deleted {deleted} instances of {resolved_model} during cleanup on data source {endpoint}"
+                f"Deleted {deleted} instances of {resolved_model} during cleanup on data source {self.data_server_source}"
             )
+
+
+class ResourceServerClient:
+    """
+    Manages the proxy's connection to a data source, authenticated with Keycloak.
+    """
+
+    dataserver_url = ""
+
+    def __init__(self, dataserver_url):
+        self.dataserver_url = dataserver_url
+
+    def request_all_scopes(self):
+        for scope in settings.DFC_KEYCLOAK_READ_SCOPES:
+            try:
+                self.request_scope(scope)
+            except KeycloakAuthenticationException as e:
+                msg = f"ERR authenticating dataserver {self.dataserver_url} with Keycloak, while requesting {scope}"
+                logger.error(msg)
+                logger.error(str(e))
+            except requests.exceptions.RequestException as e:
+                msg = f"ERR requesting a scope {scope} from dataserver {self.dataserver_url}"
+                logger.error(msg)
+                logger.error(str(e))
+            except (ParserError, ValueError, TypeError) as e:
+                msg = f"ERR parsing response from dataserver {self.dataserver_url} on scope {scope}"
+                logger.error(msg)
+                logger.error(str(e))
+
+    def request_scope(self, scope: str):
+        """
+        Requests an access token from Keycloak for a given scope, and then requests from the dataserver the associated endpoint.
+
+        :raises KeycloakAuthenticationException: if authentication with Keycloak is unsuccessful
+        :raises RequestException: if dataserver request is unsuccessful
+        """
+        token = KeycloakClient(scope).get_access_token()
+
+        # Each scope has an associated endpoint
+        headers = {"Authorization": f"Bearer {token}"}
+        endpoint = f"{self.dataserver_url}{settings.DFC_KEYCLOAK_READ_SCOPES[scope]}"
+        response = requests.get(endpoint, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+
+        # Parse the returned graph, resolve and import to the relevant models.
+        ProxyRefreshParser(data, endpoint).parse()
