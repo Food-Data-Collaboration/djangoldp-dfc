@@ -17,10 +17,8 @@ DFC_DATASERVER_URLS = ["https://data-server.cqcm.startinblox.com"]
 # TODO: There are some questions around the scopes and their discovery.
 # A discovery mechanism was proposed
 # https://git.startinblox.com/projets/projets-clients/open-food-network/data-permissioning-module/-/issues/12#note_90778
-DFC_KEYCLOAK_READ_SCOPES = {
-    "ReadEnterprise": "/enterprises",
-    # "ReadOrders": "/orders", TODO: not implemented on the staging data-server
-    # "ReadProducts": "/products", TODO: not implemented on the staging data-server
-}
+# TODO: ReadOrders and ReadProducts aren't implemented on the staging data-server, but should be included.
+DFC_KEYCLOAK_READ_SCOPES = {"ReadEnterprise": "/enterprises"}
+DFC_KEYCLOAK_MODEL_READ_SCOPES = {"dfc-b:Enterprise": "ReadEnterprise"}
 
 LDP_RDF_CONTEXT = "https://cdn.startinblox.com/owl/dfc.jsonld"
