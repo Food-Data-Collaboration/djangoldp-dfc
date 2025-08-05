@@ -45,7 +45,25 @@ class CacheWebhookView(APIView):
         data = request.data
         # TODO: respond 403 id the keycloak token is valid, but doesn't correspond to the host of the resource given in @id
 
-        # TODO: clean the request structure
+        try:
+            WebhookEventType(data["eventType"])
+        except KeyError:
+            return Response({"error": "No event type given"}, status=400)
+        except ValueError:
+            return Response({"error": "Unrecognised event type"}, status=400)
+
+        if data["eventType"] == WebhookEventType.REVOKE:
+            if "objects" not in data or not len(data["objects"]):
+                return Response({"error": "No objects given to revoke"}, status=400)
+            for obj in data["objects"]:
+                if len({"@id", "@type"}.difference(set(obj.keys()))):
+                    return Response(
+                        {
+                            "error": "Objects should be serialised with only @id and @type"
+                        },
+                        status=400,
+                    )
+
         self.process(data)
         return Response({}, status=200)
 
