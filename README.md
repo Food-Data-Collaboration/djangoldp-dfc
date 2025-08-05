@@ -28,24 +28,16 @@ To test your configuration and initialise data from the configured dataservers, 
 
 ### Automated updates of live data via webhook
 
-Data-servers implementing the DFC specifications will transmit webhooks to the proxy server when a resource is updated or when the proxy server's permissions to access the resource have changed. That webhook is implemented by this package, so the maintainer of the proxy server doesn't need to do anything to set this up. For the data-server implementation, though, here is a description of the working flow:
+Data-servers implementing the DFC specifications will transmit webhooks to the proxy server when a resource is updated or when the proxy server's permissions to access the resource have changed. That webhook is implemented by this package, so the maintainer of the proxy server doesn't need to do anything to set this up. The documentation is included for the benefit of the data-server implementation, which uses the webhook.
 
-1. an Enterprise has been modified (created, updated, deleted), or the permissions of a proxy application to access it have been changed by the enterprise user.
-2. The data server sends a POST request to the proxy server on the path `/djangoldp-dfc/webhook/`. The body of the POST request indicates which the urlid and type of the affected object:
+A Postman collection has been created to accompany these docs which provides example events.
 
-```json
-{
-    "@id": "https://data-server.cqcm.startinblox.com/api/dfc/enterprises/enterprise-1",
-    "@type": "dfc-b:Enterprise"
-}
-```
+The webhook is called when one of three things happens:
+1. an resource which the proxy has access to has been created or updated. In this case, the data-server should POST the serialization of the object to the webhook directly, using the `eventType` `"update"`. A PUT operation will be performed with the data given.
+2. a resource which the proxy has access to has been deleted or permission to the object has been revoked. In this case, the data-server should POST the `@id` and `@type` of each resource revoked in a list under the key`objects`. It should use the `eventType` `"revoke"`.
+3. the proxy has had a scope permission given or revoked on the data-server (for a given enterprise). In this case, the `eventType` should be `"refresh"` and the `enterpriseUrlid` should be the `@id` of the enterprise which revoked their data.
 
-The POST request will need to be accompanied by a token authenticated with the keycloak server.
-
-3. The proxy server will authenticate the POST requests token with keycloak. It will respond with a `401` if it is unable to do so. If the token is valid but the host given with the `@id` does not match the authenticated client, it will respond with `403`.
-4. The proxy server will match the `@type` given to the `rdf_type` configured on a model in this package. If it is unable to resolve the model it will respond `404`. If the model is known but it is not part of the caching standard, it will respond `400`. If the `@type` is OK, at this point the proxy server will respond 200 to the webhook request.
-5. If only the `@id` and the `@type` were sent by the data-server, then the proxy server will make a `GET` request retrieve the full enterprise by following the urlid given.
-6. If the requested resource responds `404` (because the permission has been revoked), the proxy server will delete the Enterprise from its' local database. Otherwise, the enterprise and connected models will be updated with the new data. If the enterprise model did not exist, a new Enterprise will be created.
+In all cases, the endpoint on the proxy server is `/djangoldp-dfc/webhook/`, and the request type is POST.
 
 ## Contributing
 

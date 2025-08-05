@@ -53,7 +53,7 @@ class ProxyRefreshParser:
             resolved_type_uri = None
             for type_uri in self.graph.objects(subject, RDF_TYPE_PREDICATE):
                 try:
-                    model_types += [self.graph.qname(type_uri)]
+                    model_types += [str(type_uri), self.graph.qname(type_uri)]
                 except (ValueError, KeyError) as e:
                     logger.warn(
                         f"Unable to use compacted form of {type_uri}. RDFLib error: {e}"

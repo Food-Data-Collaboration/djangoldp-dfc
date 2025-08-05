@@ -1,6 +1,11 @@
 from django.urls import path
 from .models import Enterprise, Person
-from .views import EnterpriseViewset, EnterpriseImportView, PersonViewset
+from .views import (
+    CacheWebhookView,
+    EnterpriseViewset,
+    EnterpriseImportView,
+    PersonViewset,
+)
 
 urlpatterns = [
     path("dfc/enterprise-import/", EnterpriseImportView.as_view(), name="csv_import"),
@@ -13,4 +18,9 @@ urlpatterns = [
         ),
     ),
     path("persons/", PersonViewset.urls(model_prefix="person", model=Person)),
+    path(
+        "djangoldp-dfc/webhook/",
+        CacheWebhookView.as_view(),
+        name="djangoldp-dfc-webhook",
+    ),
 ]
