@@ -99,3 +99,7 @@ class EnterpriseViewset(LDPViewSet):
 
 class PersonViewset(LDPViewSet):
     filter_backends = [SearchByQueryParamFilterBackend]
+
+
+class SuppliedProductViewset(LDPViewSet):
+    filter_backends = [SearchByQueryParamFilterBackend]
