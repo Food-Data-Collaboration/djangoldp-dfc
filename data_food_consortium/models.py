@@ -153,8 +153,9 @@ class Enterprise(AbstractAgent):
             "social_medias",
             "supplied_products",
             "affiliated_to",
+            "catalog_items",
         ]
-        nested_fields = ["addresses", "social_medias", "affiliated_to"]
+        nested_fields = ["addresses", "social_medias", "affiliated_to", "catalog_items"]
         disable_url = True  # Disables DjangoLDP auto-url generation
 
     def __str__(self):
@@ -433,3 +434,132 @@ class LocalizedProduct(AbstractDFCModel):
 
     def __str__(self):
         return f"Localized {self.reference_of}"
+
+
+class CatalogItem(AbstractDFCModel):
+    managed_by = fields.ForeignKey(
+        Enterprise,
+        related_rdf_type="dfc-b:manages",
+        rdf_type="dfc-b:managedBy",
+        blank=True,
+        null=True,
+        related_name="catalog_items",
+        on_delete=models.SET_NULL,
+    )
+    # TODO: "references" should be a ForeignKey to any DefinedProduct implementation
+    #   https://git.startinblox.com/djangoldp-packages/djangoldp/-/issues/446
+    references = fields.ForeignKey(
+        SuppliedProduct,
+        related_rdf_type="dfc-b:referencedBy",
+        rdf_type="dfc-b:references",
+        blank=True,
+        null=True,
+        related_name="catalog_items",
+        on_delete=models.SET_NULL,
+    )
+
+    extra_availability_time = fields.TextField(
+        blank=True, null=True, rdf_type="dfc-b:extraAvailabilityTime"
+    )  # xsd:duration
+    extra_delivery_condition = fields.TextField(
+        blank=True, null=True, rdf_type="dfc-b:extraDeliveryCondition"
+    )
+    sku = fields.TextField(blank=True, null=True, rdf_type="dfc-b:sku")
+    stock_limitation = fields.FloatField(
+        blank=True, null=True, rdf_type="dfc-b:stockLimitation"
+    )
+
+    class Meta:
+        rdf_type = "dfc-b:CatalogItem"
+        serializer_fields = [
+            "@id",
+            "managed_by",
+            "references",
+            "extra_availability_time",
+            "extra_delivery_condition",
+            "sku",
+            "stock_limitation",
+            "offers",
+        ]
+        nested_fields = ["offers"]
+
+    def __str__(self):
+        return f"CatalogItem {self.references} ({self.managed_by})"
+
+
+class CustomerCategory(AbstractDFCModel):
+    defined_by = fields.ForeignKey(
+        Enterprise,
+        related_rdf_type="dfc-b:defines",
+        rdf_type="dfc-b:definedBy",
+        blank=True,
+        null=True,
+        related_name="customer_categories",
+        on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        rdf_type = "dfc-b:CustomerCategory"
+        serializer_fields = [
+            "@id",
+            "managed_by",
+            "references",
+            "extra_availability_time",
+            "extra_delivery_condition",
+            "sku",
+            "offers",
+        ]
+        nested_fields = ["offers"]
+
+    def __str__(self):
+        return f"CatalogItem {self.id}"
+
+
+class Price(AbstractDFCModel):
+    value = fields.FloatField(blank=True, null=True, rdf_type="dfc-b:value")
+    # TODO: hasUnit should point to an RDF value and we could add a custom constraint for this.
+    has_unit = fields.TextField(blank=True, null=True, rdf_type="dfc-b:hasUnit")
+
+    class Meta:
+        rdf_type = "dfc-b:Price"
+        serializer_fields = ["@id", "value", "has_unit"]
+
+    def __str__(self):
+        return f"Price {self.value} ({self.has_unit})"
+
+
+class Offer(AbstractDFCModel):
+    offers = fields.ForeignKey(
+        CatalogItem,
+        related_rdf_type="dfc-b:offeredThrough",
+        rdf_type="dfc-b:offers",
+        blank=True,
+        null=True,
+        related_name="offers",
+        on_delete=models.CASCADE,
+    )
+    offered_to = fields.ForeignKey(
+        CustomerCategory,
+        related_rdf_type="dfc-b:offers",
+        rdf_type="dfc-b:offeredTo",
+        blank=True,
+        null=True,
+        related_name="offers",
+        on_delete=models.CASCADE,
+    )
+    offered_for = fields.ForeignKey(
+        Price,
+        related_rdf_type="dfc-b:priceOf",
+        rdf_type="dfc-b:hasPrice",
+        blank=True,
+        null=True,
+        related_name="offers",
+        on_delete=models.RESTRICT,
+    )
+
+    class Meta:
+        rdf_type = "dfc-b:Offer"
+        serializer_fields = ["@id", "offers", "offered_to", "offered_for"]
+
+    def __str__(self):
+        return f"Offer of {self.offers} to {self.offered_to} for {self.offered_for}"

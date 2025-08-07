@@ -20,7 +20,7 @@ urlpatterns = [
         EnterpriseViewset.urls(
             model_prefix="enterprise",
             model=Enterprise,
-            nested_fields=["supplied_products", "social_medias"],
+            nested_fields=["supplied_products", "social_medias", "catalog_items"],
         ),
     ),
     path("persons/", PersonViewset.urls(model_prefix="person", model=Person)),
