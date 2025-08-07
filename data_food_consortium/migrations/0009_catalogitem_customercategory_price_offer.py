@@ -296,6 +296,14 @@ class Migration(migrations.Migration):
                         to="data_food_consortium.catalogitem",
                     ),
                 ),
+                (
+                    "discount",
+                    djangoldp.fields.FloatField(blank=True, null=True),
+                ),
+                (
+                    "stock_limitation",
+                    djangoldp.fields.FloatField(blank=True, null=True),
+                ),
             ],
             options={
                 "rdf_type": "dfc-b:Offer",

@@ -556,6 +556,10 @@ class Offer(AbstractDFCModel):
         related_name="offers",
         on_delete=models.RESTRICT,
     )
+    discount = fields.FloatField(blank=True, null=True, rdf_type="dfc-b:discount")
+    stock_limitation = fields.FloatField(
+        blank=True, null=True, rdf_type="dfc-b:stockLimitation"
+    )
 
     class Meta:
         rdf_type = "dfc-b:Offer"
