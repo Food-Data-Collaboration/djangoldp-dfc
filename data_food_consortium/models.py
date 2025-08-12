@@ -155,7 +155,13 @@ class Enterprise(AbstractAgent):
             "affiliated_to",
             "catalog_items",
         ]
-        nested_fields = ["addresses", "social_medias", "affiliated_to", "catalog_items"]
+        nested_fields = [
+            "addresses",
+            "social_medias",
+            "supplied_products",
+            "affiliated_to",
+            "catalog_items",
+        ]
         disable_url = True  # Disables DjangoLDP auto-url generation
 
     def __str__(self):
@@ -164,7 +170,6 @@ class Enterprise(AbstractAgent):
     # coordinates = models.TextField(blank=True, null=True) # Reverse on Coordination model
     # defines = models.TextField(blank=True, null=True) # Reverse on CustomerCategory model
     # maintains = models.TextField(blank=True, null=True) reverse on Catalog
-    # manages = models.TextField(blank=True, null=True) reverse on CatalogItem
     # orders = models.TextField(blank=True, null=True) from subclassing Agent. Reverse on Orders
     # owns = models.TextField(blank=True, null=True) from subclassing Agent. Reverse on Brand
     # proposes = models.TextField(blank=True, null=True) reverse on TechnicalProduct
@@ -322,6 +327,15 @@ class AbstractProduct(AbstractDFCModel):
         blank=True,
         null=True,
     )  # xsd:anyURI
+    specific_condition = fields.TextField(
+        rdf_type="dfc-b:specificCondition",
+        null=True,
+        blank=True,
+        help_text="Any specific conditions requried for storage or carriage of the Product.",
+    )
+
+    # TODO: has_unit (dfc-b:hasUnit): a dfc-m:Unit value
+    # TODO: Image: URI field
 
     # TODO: Currently no serialization of reverse in the relationship. Wanted to avoid polymorphism if possible, but a product can be a
     # variant of a product, or a product group, for example
@@ -333,11 +347,9 @@ class AbstractProduct(AbstractDFCModel):
         null=True,
     )
 
-    # Image
-    # has_percentage_of_alcohol_by_volume
+    has_ingredient = fields.JSONField(rdf_type="dfc-b:hasIngredient", null=True)
 
-    # has_unit
-    # referenced_by: CatalogItem
+    # has_percentage_of_alcohol_by_volume
     # concerned_by: OrderLine
     # consumed_by: AsPlannedConsumptionFlow
     # has_process: Process
@@ -346,7 +358,6 @@ class AbstractProduct(AbstractDFCModel):
     # has_characteristic: PhysicalCharacteristic
     # hasAllergenCharacteristic: PhysicalCharacteristic
     # has_nutrient_characteristic: PhysicalCharacteristic
-    # has_ingredient:
     # has_brand: Brand
     # brand: Brand
     # has_certification: Label
@@ -393,7 +404,9 @@ class SuppliedProduct(AbstractProduct):
             "url",
             "is_variant_of",
             "supplied_by",
+            "referenced_by",
         ]
+        nested_fields = ["referenced_by"]
         disable_url = True  # Disables DjangoLDP auto-url generation
 
     def __str__(self):
@@ -437,6 +450,10 @@ class LocalizedProduct(AbstractDFCModel):
 
 
 class CatalogItem(AbstractDFCModel):
+    """
+    A CatalogItem is a product, listed for sale.
+    """
+
     managed_by = fields.ForeignKey(
         Enterprise,
         related_rdf_type="dfc-b:manages",
