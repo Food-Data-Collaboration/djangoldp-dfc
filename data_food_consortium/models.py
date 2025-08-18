@@ -1,6 +1,6 @@
 from django.db import models
-from djangoldp.models import Model
 from djangoldp import fields
+from djangoldp.models import Model
 
 from data_food_consortium.enums import ProductType
 
@@ -68,20 +68,25 @@ class AbstractAgent(AbstractDFCModel):
         null=True,
     )  # xsd:String
     # TODO: revisit max_length parameter based on explicit or implicit limit of the ontology
-    logo = fields.LDPUrlField(
+    logo = fields.TextField(
         rdf_type="dfc-b:logo",
         max_length=255,
         blank=True,
         null=True,
     )  # xsd:anyURI
-    logo_url = fields.LDPUrlField(
+    logo_url = fields.TextField(
         rdf_type="ofn:logo_url", max_length=255, blank=True, null=True
     )
-    promo_image_url = fields.LDPUrlField(
+    promo_image_url = fields.TextField(
         rdf_type="ofn:promo_image_url", max_length=255, blank=True, null=True
     )
     phone_number = fields.TextField(
         rdf_type="dfc-b:hasPhoneNumber",
+        blank=True,
+        null=True,
+    )
+    website_page = fields.TextField(
+        rdf_type="dfc-b:websitePage",
         blank=True,
         null=True,
     )
@@ -144,6 +149,7 @@ class Enterprise(AbstractAgent):
             "logo_url",
             "promo_image_url",
             "phone_number",
+            "website_page",
             "description",
             "long_description",
             "contact_name",
@@ -224,7 +230,7 @@ class SocialMedia(AbstractDFCModel):
         blank=True,
         null=True,
     )  # xsd:String
-    url = fields.LDPUrlField(
+    url = fields.TextField(
         rdf_type="dfc-b:URL",
         blank=True,
         null=True,
@@ -320,8 +326,9 @@ class AbstractProduct(AbstractDFCModel):
         choices=ProductType.choices,
         blank=True,
         null=True,
+        max_length=255,
     )
-    url = fields.LDPUrlField(
+    url = fields.TextField(
         rdf_type="dfc-b:URL",
         max_length=255,
         blank=True,
