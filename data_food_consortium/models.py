@@ -320,6 +320,11 @@ class AbstractProduct(AbstractDFCModel):
         blank=True,
         null=True,
     )
+    image = fields.TextField(
+        rdf_type="dfc-b:image",
+        blank=True,
+        null=True,
+    )
     has_type = fields.CharField(
         rdf_type="dfc-b:hasType",
         verbose_name="has_type",
