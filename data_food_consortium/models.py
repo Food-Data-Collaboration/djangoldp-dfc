@@ -359,7 +359,7 @@ class AbstractProduct(AbstractDFCModel):
         null=True,
     )
 
-    has_ingredient = fields.JSONField(rdf_type="dfc-b:hasIngredient", null=True)
+    has_ingredient = fields.JSONField(rdf_type="dfc-b:hasIngredient", blank=True, null=True)
 
     # has_percentage_of_alcohol_by_volume
     # concerned_by: OrderLine
