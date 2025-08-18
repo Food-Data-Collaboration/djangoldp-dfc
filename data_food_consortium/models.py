@@ -416,9 +416,7 @@ class SuppliedProduct(AbstractProduct):
             "url",
             "is_variant_of",
             "supplied_by",
-            "referenced_by",
         ]
-        nested_fields = ["referenced_by"]
         disable_url = True  # Disables DjangoLDP auto-url generation
 
     def __str__(self):
