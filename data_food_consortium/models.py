@@ -413,6 +413,7 @@ class SuppliedProduct(AbstractProduct):
             "name",
             "description",
             "has_type",
+            "image",
             "url",
             "is_variant_of",
             "supplied_by",
