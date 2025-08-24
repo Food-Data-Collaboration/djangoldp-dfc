@@ -18,6 +18,7 @@ from data_food_consortium.proxy.keycloak import (
 
 
 RDF_TYPE_PREDICATE = URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+SCOPES_BASE_URI = "https://github.com/datafoodconsortium/taxonomies/releases/latest/download/scopes.rdf#"
 
 
 logger = logging.getLogger(__name__)
@@ -223,9 +224,30 @@ class ResourceServerClient:
     """
 
     dataserver_url = ""
+    scope_config = None
 
     def __init__(self, dataserver_url):
         self.dataserver_url = dataserver_url
+
+        self.scope_config = settings.DFC_KEYCLOAK_READ_SCOPES.copy()
+        response = requests.get(f"{dataserver_url}.well-known/dfc/")
+        if response.status_code == 200:
+            data_server_endpoints = response.json()
+            for scope in settings.DFC_KEYCLOAK_READ_SCOPES:
+                key = f"{SCOPES_BASE_URI}{scope}"
+                if key in data_server_endpoints:
+                    val = data_server_endpoints[key]
+                    if val.startswith("/"):
+                        val = val[1:]
+                    self.scope_config[scope] = val
+            logger.debug(
+                f"Configured ResourceServerClient with discovered config {self.scope_config}"
+            )
+        else:
+            logger.warn(
+                "Configured ResourceServerClient with default config, "
+                f"discovery endpoint responded {response.status_code}"
+            )
 
     def request_all_scopes(self):
         for scope in settings.DFC_KEYCLOAK_READ_SCOPES:
@@ -274,8 +296,7 @@ class ResourceServerClient:
         :raises RequestException: if dataserver request is unsuccessful
         """
         # Each scope has an associated endpoint.
-        # TODO: Complete endpoint discovery at /.well-known/dfc/
-        endpoint = f"{self.dataserver_url}{settings.DFC_KEYCLOAK_READ_SCOPES[scope]}"
+        endpoint = f"{self.dataserver_url}{self.scope_config[scope]}"
         parser = ProxyRefreshParser(endpoint)
         self._request_and_process_scope_at_endpoint(parser, scope, endpoint)
         parser.clean_up()
