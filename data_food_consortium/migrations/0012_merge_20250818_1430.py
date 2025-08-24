@@ -6,7 +6,10 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("data_food_consortium", "0010_suppliedproduct_has_ingredient_and_more"),
+        (
+            "data_food_consortium",
+            "0010_enterprise_website_page_person_website_page_and_more",
+        ),
         ("data_food_consortium", "0011_suppliedproduct_image"),
     ]
 

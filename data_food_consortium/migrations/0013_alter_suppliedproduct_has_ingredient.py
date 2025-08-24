@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
+        migrations.AddField(
             model_name="suppliedproduct",
             name="has_ingredient",
             field=djangoldp.fields.JSONField(blank=True, null=True),
