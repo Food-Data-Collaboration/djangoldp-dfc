@@ -186,6 +186,9 @@ class ProxyRefreshParser:
             serializer.is_valid(raise_exception=True)
             instance = serializer.save()
 
+            # LDPSerializer will create duplicate nested objects. Undo that.
+            resolved_model.objects.filter(urlid=instance.proxy_of).delete()
+
             # Attempt to remove any implicitly deleted data (data previously returned on this endpoint now missing).
             deleted = resolved_model.objects.filter(
                 updated_at__lt=import_started_at,
