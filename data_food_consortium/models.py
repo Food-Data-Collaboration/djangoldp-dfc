@@ -62,7 +62,8 @@ class AbstractAddress(AbstractDFCModel):
 
 
 class AbstractAgent(AbstractDFCModel):
-    email = fields.EmailField(
+    # NOTE: We use TextField because we don't want to enforce email validation on this data
+    email = fields.TextField(
         rdf_type="dfc-b:email",
         blank=True,
         null=True,
@@ -361,7 +362,9 @@ class AbstractProduct(AbstractDFCModel):
         null=True,
     )
 
-    has_ingredient = fields.JSONField(rdf_type="dfc-b:hasIngredient", blank=True, null=True)
+    has_ingredient = fields.JSONField(
+        rdf_type="dfc-b:hasIngredient", blank=True, null=True
+    )
 
     # has_percentage_of_alcohol_by_volume
     # concerned_by: OrderLine
