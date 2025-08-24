@@ -228,21 +228,35 @@ class ResourceServerClient:
                 logger.error(msg)
                 logger.error(str(e))
 
-    def request_scope(self, scope: str):
-        """
-        Requests an access token from Keycloak for a given scope, and then requests from the dataserver the associated endpoint.
-
-        :raises KeycloakAuthenticationException: if authentication with Keycloak is unsuccessful
-        :raises RequestException: if dataserver request is unsuccessful
-        """
+    def _get_auth_headers_with_token_for_scope(self, scope: str):
         token = KeycloakClient(scope).get_access_token()
+        return {"Authorization": f"Bearer {token}"}
 
-        # Each scope has an associated endpoint
-        headers = {"Authorization": f"Bearer {token}"}
-        endpoint = f"{self.dataserver_url}{settings.DFC_KEYCLOAK_READ_SCOPES[scope]}"
+    def _request_and_process_scope_at_endpoint(self, scope: str, endpoint: str):
+        """
+        Requests an access token from Keycloak for a given scope,
+        and then recursively requests from the dataserver the associated endpoint,
+        scraping all available data until complete.
+        """
+        headers = self._get_auth_headers_with_token_for_scope(scope)
         response = requests.get(endpoint, headers=headers)
         response.raise_for_status()
         data = response.json()
 
         # Parse the returned graph, resolve and import to the relevant models.
         ProxyRefreshParser(data, endpoint).parse()
+
+        if "next" in data and data["next"] is not None:
+            self._request_and_process_scope_at_endpoint(scope, data["next"])
+
+    def request_scope(self, scope: str):
+        """
+        Discovers the appropriate endpoint for a scope, and then processes it.
+
+        :raises KeycloakAuthenticationException: if authentication with Keycloak is unsuccessful
+        :raises RequestException: if dataserver request is unsuccessful
+        """
+        # Each scope has an associated endpoint.
+        # TODO: Complete endpoint discovery at /.well-known/dfc/
+        endpoint = f"{self.dataserver_url}{settings.DFC_KEYCLOAK_READ_SCOPES[scope]}"
+        self._request_and_process_scope_at_endpoint(scope, endpoint)
