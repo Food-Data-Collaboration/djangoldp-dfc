@@ -18,16 +18,13 @@ urlpatterns = [
     path(
         "enterprises/",
         EnterpriseViewset.urls(
-            model_prefix="enterprise",
             model=Enterprise,
             nested_fields=["supplied_products", "social_medias", "catalog_items"],
         ),
     ),
-    path("persons/", PersonViewset.urls(model_prefix="person", model=Person)),
+    path("persons/", PersonViewset.urls(model=Person)),
     path(
         "supplied_products/",
-        SuppliedProductViewset.urls(
-            model_prefix="supplied_product", model=SuppliedProduct
-        ),
+        SuppliedProductViewset.urls(model=SuppliedProduct),
     ),
 ]

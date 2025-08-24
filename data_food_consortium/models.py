@@ -210,6 +210,7 @@ class EnterpriseAddress(AbstractAddress):
             "region",
             "street",
         ]
+        container_path = "enterprise_addresses"
 
     def __str__(self):
         return f"{self.address_of} address"
@@ -239,6 +240,7 @@ class SocialMedia(AbstractDFCModel):
     class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:SocialMedia"
         serializer_fields = ["@id", "enterprise", "name", "url"]
+        container_path = "social_medias"
 
     def __str__(self):
         return f"{self.enterprise}: {self.name}"
@@ -419,6 +421,7 @@ class SuppliedProduct(AbstractProduct):
             "supplied_by",
         ]
         disable_url = True  # Disables DjangoLDP auto-url generation
+        container_path = "supplied_products"
 
     def __str__(self):
         if self.name is not None and len(self.name):
@@ -482,7 +485,7 @@ class CatalogItem(AbstractDFCModel):
         rdf_type="dfc-b:references",
         blank=True,
         null=True,
-        related_name="catalog_items",
+        related_name="referenced_by",
         on_delete=models.SET_NULL,
     )
 
@@ -510,6 +513,7 @@ class CatalogItem(AbstractDFCModel):
             "offers",
         ]
         nested_fields = ["offers"]
+        container_path = "catalog_items"
 
     def __str__(self):
         return f"CatalogItem {self.references} ({self.managed_by})"
@@ -538,6 +542,7 @@ class CustomerCategory(AbstractDFCModel):
             "offers",
         ]
         nested_fields = ["offers"]
+        container_path = "customer_categories"
 
     def __str__(self):
         return f"CatalogItem {self.id}"
