@@ -1,7 +1,9 @@
 import logging
 import requests
+import urllib
 
 from django.conf import settings
+from django.db.models import Q
 from django.utils import timezone
 from rdflib import Graph, URIRef
 from rdflib.exceptions import ParserError
@@ -26,15 +28,15 @@ class ProxyRefreshParser:
     Responsible for parsing an RDF-graph containing data to be proxied by a DjangoLDP application.
     """
 
-    raw_data = None
-    graph = None
     data_server_source = ""
+    import_started_at = None
+    imported_models = None
 
-    def __init__(self, raw_data, data_server_source):
-        self.raw_data = raw_data
-        self.graph = Graph()
-        self.graph.parse(data=raw_data, format="json-ld")
-        self.data_server_source = data_server_source
+    def __init__(self, data_server_source):
+        dss = urllib.parse.urlparse(data_server_source)
+        self.data_server_source = f"{dss.scheme}://{dss.netloc}"
+        self.imported_models = set()
+        self.import_started_at = timezone.now()
 
     def get_serializer_class(self, model, depth=2):
         # NOTE: LDPSerializer cannot be used without meta args:
@@ -49,9 +51,10 @@ class ProxyRefreshParser:
             "LDPSerializer", (LDPSerializer,), {"Meta": meta_class}
         )
 
-    def parse(self):
-        import_started_at = timezone.now()
-        subjects = set(self.graph.subjects())
+    def parse(self, jsonld_data):
+        graph = Graph()
+        graph.parse(data=jsonld_data, format="json-ld")
+        subjects = set(graph.subjects())
 
         for subject in subjects:
             # Ensure that the subject is not a blank node.
@@ -64,9 +67,9 @@ class ProxyRefreshParser:
             resolved_model = None
             model_types = []
             resolved_type_uri = None
-            for type_uri in self.graph.objects(subject, RDF_TYPE_PREDICATE):
+            for type_uri in graph.objects(subject, RDF_TYPE_PREDICATE):
                 try:
-                    model_types += [str(type_uri), self.graph.qname(type_uri)]
+                    model_types += [str(type_uri), graph.qname(type_uri)]
                 except (ValueError, KeyError) as e:
                     logger.warn(
                         f"Unable to use compacted form of {type_uri}. RDFLib error: {e}"
@@ -88,7 +91,7 @@ class ProxyRefreshParser:
             resource_data = {
                 "@type": resolved_type_uri,
             }
-            for pred, obj in self.graph.predicate_objects(subject):
+            for pred, obj in graph.predicate_objects(subject):
                 if pred == RDF_TYPE_PREDICATE:
                     continue
 
@@ -99,7 +102,7 @@ class ProxyRefreshParser:
                 # Create a copy so that we can tolerate compacted and expanded forms
                 # LDPSerializer will ignore non-mapped values later
                 try:
-                    resource_data[self.graph.qname(pred)] = value
+                    resource_data[graph.qname(pred)] = value
                 except (ValueError, KeyError) as e:
                     logger.warn(
                         f"Unable to use compacted form of {pred}. RDFLib error: {e}"
@@ -114,6 +117,7 @@ class ProxyRefreshParser:
                     data_server_source=self.data_server_source,
                     allow_create_backlink=False,
                 )
+            self.imported_models.add(resolved_model)
 
             # Map the RDF types to local model names where possible, and resolve foreign keys
             for field in resolved_model._meta._get_fields(forward=True, reverse=True):
@@ -186,16 +190,30 @@ class ProxyRefreshParser:
             serializer.is_valid(raise_exception=True)
             instance = serializer.save()
 
-            # LDPSerializer will create duplicate nested objects. Undo that.
-            resolved_model.objects.filter(urlid=instance.proxy_of).delete()
+    def clean_up(self):
+        """
+        LDPSerializer creates objects implicitly that in our case become duplicate objects, because of the requirement that
+        proxy_of define the original resource, not a urlid (DjangoLDP is not built with proxies in mind).
 
-            # Attempt to remove any implicitly deleted data (data previously returned on this endpoint now missing).
-            deleted = resolved_model.objects.filter(
-                updated_at__lt=import_started_at,
-                data_server_source=self.data_server_source,
+        Similarly, objects may have been previously cached and sinced removed, either because they were deleted or because
+        we no longer have permission to proxy them.
+
+        This method finds and deletes those objects.
+        """
+        ldp_serializer_created = Q(
+            urlid__startswith=self.data_server_source, proxy_of__isnull=True
+        )
+        missing_from_new_import = Q(
+            updated_at__lt=self.import_started_at,
+            data_server_source=self.data_server_source,
+        )
+
+        for imported_model in self.imported_models:
+            deleted = imported_model.objects.filter(
+                ldp_serializer_created | missing_from_new_import
             ).delete()
-            logger.info(
-                f"Deleted {deleted} instances of {resolved_model} during cleanup on data source {self.data_server_source}"
+            logger.debug(
+                f"Deleted {deleted} instances of {imported_model} during cleanup on data source {self.data_server_source}"
             )
 
 
@@ -230,7 +248,7 @@ class ResourceServerClient:
         token = KeycloakClient(scope).get_access_token()
         return {"Authorization": f"Bearer {token}"}
 
-    def _request_and_process_scope_at_endpoint(self, scope: str, endpoint: str):
+    def _request_and_process_scope_at_endpoint(self, parser, scope: str, endpoint: str):
         """
         Requests an access token from Keycloak for a given scope,
         and then recursively requests from the dataserver the associated endpoint,
@@ -242,10 +260,11 @@ class ResourceServerClient:
         data = response.json()
 
         # Parse the returned graph, resolve and import to the relevant models.
-        ProxyRefreshParser(data, endpoint).parse()
+        parser.parse(data)
 
+        # If there is more data, continue.
         if "next" in data and data["next"] is not None:
-            self._request_and_process_scope_at_endpoint(scope, data["next"])
+            self._request_and_process_scope_at_endpoint(parser, scope, data["next"])
 
     def request_scope(self, scope: str):
         """
@@ -257,4 +276,6 @@ class ResourceServerClient:
         # Each scope has an associated endpoint.
         # TODO: Complete endpoint discovery at /.well-known/dfc/
         endpoint = f"{self.dataserver_url}{settings.DFC_KEYCLOAK_READ_SCOPES[scope]}"
-        self._request_and_process_scope_at_endpoint(scope, endpoint)
+        parser = ProxyRefreshParser(endpoint)
+        self._request_and_process_scope_at_endpoint(parser, scope, endpoint)
+        parser.clean_up()
