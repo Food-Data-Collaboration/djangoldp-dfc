@@ -36,6 +36,19 @@ class ProxyRefreshParser:
         self.graph.parse(data=raw_data, format="json-ld")
         self.data_server_source = data_server_source
 
+    def get_serializer_class(self, model, depth=2):
+        # NOTE: LDPSerializer cannot be used without meta args:
+        #   https://git.startinblox.com/djangoldp-packages/djangoldp/-/issues/277
+        meta_args = {
+            "model": model,
+            "depth": depth,
+            "fields": "__all__",
+        }
+        meta_class = type("Meta", (), meta_args)
+        return type(LDPSerializer)(
+            "LDPSerializer", (LDPSerializer,), {"Meta": meta_class}
+        )
+
     def parse(self):
         import_started_at = timezone.now()
         subjects = set(self.graph.subjects())
@@ -142,16 +155,8 @@ class ProxyRefreshParser:
                     existing_data = {}
 
                     if related_instance is not None:
-                        # NOTE: LDPSerializer cannot be used without meta args:
-                        #   https://git.startinblox.com/djangoldp-packages/djangoldp/-/issues/277
-                        meta_args = {
-                            "model": field.related_model,
-                            "depth": 2,
-                            "fields": "__all__",
-                        }
-                        meta_class = type("Meta", (), meta_args)
-                        serializer_class = type(LDPSerializer)(
-                            "LDPSerializer", (LDPSerializer,), {"Meta": meta_class}
+                        serializer_class = self.get_serializer_class(
+                            field.related_model
                         )
                         existing_data = serializer_class(related_instance).data
 
@@ -176,17 +181,7 @@ class ProxyRefreshParser:
             # Use LDPSerializer with the resolved model to save it in our database.
             logger.debug(f"\nCOMMITTING SAVE: {resource_data}")
 
-            # NOTE: LDPSerializer cannot be used without meta args:
-            #   https://git.startinblox.com/djangoldp-packages/djangoldp/-/issues/277
-            meta_args = {
-                "model": resolved_model,
-                "depth": 10,
-                "fields": "__all__",
-            }
-            meta_class = type("Meta", (), meta_args)
-            serializer_class = type(LDPSerializer)(
-                "LDPSerializer", (LDPSerializer,), {"Meta": meta_class}
-            )
+            serializer_class = self.get_serializer_class(resolved_model, 10)
             serializer = serializer_class(instance, data=resource_data)
             serializer.is_valid(raise_exception=True)
             instance = serializer.save()
