@@ -685,6 +685,11 @@ class PhysicalPlaceAddress(AbstractAddress):
 
 
 class PhysicalPlace(AbstractDFCModel):
+    name = fields.TextField(
+        rdf_type="dfc-b:name",
+        blank=True,
+        null=True,
+    )
     address = fields.ForeignKey(
         PhysicalPlaceAddress,
         related_rdf_type="dfc-b:hasAddress",
@@ -712,7 +717,10 @@ class PhysicalPlace(AbstractDFCModel):
 
     class Meta:
         rdf_type = "dfc-b:PhysicalPlace"
-        serializer_fields = ["address", "main_contact", "phone_number", "URL"]
+        serializer_fields = ["name", "address", "main_contact", "phone_number", "URL"]
+
+    def __str__(self):
+        return self.name if self.name and len(self.name) else self.address
 
 
 class Coordination(AbstractDFCModel):
