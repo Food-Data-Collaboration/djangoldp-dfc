@@ -13,7 +13,7 @@ DFC_KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID")
 DFC_KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET")
 
 # Dataservers that this platform caches data from.
-DFC_DATASERVER_URLS = []
+DFC_DATASERVER_URLS = os.getenv("DATASERVER_URLS", "").split(",")
 
 # Defines the default read scopes, if not overridden during the Discovery mechanism.
 # TODO: ReadOrders and ReadProducts aren't implemented on the staging data-server, but should be included.
