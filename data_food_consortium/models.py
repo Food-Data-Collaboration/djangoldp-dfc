@@ -161,6 +161,7 @@ class Enterprise(AbstractAgent):
             "supplied_products",
             "affiliated_to",
             "catalog_items",
+            "services",
         ]
         nested_fields = [
             "addresses",
@@ -168,6 +169,7 @@ class Enterprise(AbstractAgent):
             "supplied_products",
             "affiliated_to",
             "catalog_items",
+            "services",
         ]
         disable_url = True  # Disables DjangoLDP auto-url generation
 
@@ -603,3 +605,56 @@ class Offer(AbstractDFCModel):
 
     def __str__(self):
         return f"Offer of {self.offers} to {self.offered_to} for {self.offered_for}"
+
+
+class Service(AbstractDFCModel):
+    """
+    Represents a service that can be provided by an Enterprise, like "home delivery".
+
+    NOTE: This model isn't currently a part of the DFC standard, and was added early
+    for the CQCM use-case. To reflect this, it uses the CQCM namespace for now. When it is
+    added to the DFC standard, the namespace should be replaced and data migrated.
+    """
+
+    name = fields.TextField(
+        rdf_type="dfc-b:name",
+        blank=True,
+        null=True,
+    )
+
+    class Meta:
+        rdf_type = "cqcm:Service"
+        serializer_fields = ["@id", "created_at", "updated_at", "name", "suppliers"]
+        nested_fields = ["suppliers"]
+
+    def __str__(self):
+        return self.name
+
+
+class EnterpriseService(AbstractDFCModel):
+    enterprise = fields.ForeignKey(
+        Enterprise,
+        rdf_type="dfc-b:suppliedBy",
+        related_rdf_type="cqcm:services",
+        blank=True,
+        null=True,
+        related_name="services",
+        on_delete=models.CASCADE,
+    )
+    service = fields.ForeignKey(
+        Service,
+        rdf_type="cqcm:supplies",
+        related_rdf_type="cqcm:suppliers",
+        blank=True,
+        null=True,
+        related_name="suppliers",
+        on_delete=models.RESTRICT,
+    )
+
+    class Meta:
+        rdf_type = "cqcm:EnterpriseService"
+        serializer_fields = ["@id", "created_at", "updated_at", "enterprise", "service"]
+        container_path = "enterprise_services"
+
+    def __str__(self):
+        return f"{self.service.name} ({self.enterprise})"

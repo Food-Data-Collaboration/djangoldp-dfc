@@ -54,6 +54,27 @@ class PersonAdmin(DFCModelAdmin):
     ]
 
 
+@admin.register(models.Service)
+class ServiceAdmin(DFCModelAdmin):
+    search_fields = ["urlid", "proxy_of", "name"]
+    list_display = ["name"]
+
+
+@admin.register(models.EnterpriseService)
+class EnterpriseServiceAdmin(DFCModelAdmin):
+    search_fields = [
+        "urlid",
+        "proxy_of",
+        "service__name",
+        "service__urlid",
+        "enterprise__name",
+        "enterprise__urlid",
+        "enterprise__proxy_of",
+    ]
+    list_display = ["enterprise", "service"]
+    raw_id_fields = ["enterprise"]
+
+
 @admin.register(models.SuppliedProduct)
 class SuppliedProductAdmin(DFCModelAdmin):
     search_fields = [

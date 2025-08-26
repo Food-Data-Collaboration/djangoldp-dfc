@@ -19,7 +19,12 @@ urlpatterns = [
         "enterprises/",
         EnterpriseViewset.urls(
             model=Enterprise,
-            nested_fields=["supplied_products", "social_medias", "catalog_items"],
+            nested_fields=[
+                "supplied_products",
+                "social_medias",
+                "catalog_items",
+                "services",
+            ],
         ),
     ),
     path("persons/", PersonViewset.urls(model=Person)),
