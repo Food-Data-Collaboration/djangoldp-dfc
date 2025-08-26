@@ -24,6 +24,7 @@ urlpatterns = [
                 "social_medias",
                 "catalog_items",
                 "services",
+                "coordinations",
             ],
         ),
     ),

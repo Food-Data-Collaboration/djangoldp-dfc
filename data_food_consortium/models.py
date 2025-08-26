@@ -2,7 +2,7 @@ from django.db import models
 from djangoldp import fields
 from djangoldp.models import Model
 
-from data_food_consortium.enums import ProductType
+from data_food_consortium.enums import ProductType, ShippingOptionType
 
 
 class AbstractDFCModel(Model):
@@ -162,6 +162,7 @@ class Enterprise(AbstractAgent):
             "affiliated_to",
             "catalog_items",
             "services",
+            "coordinations",
         ]
         nested_fields = [
             "addresses",
@@ -170,6 +171,7 @@ class Enterprise(AbstractAgent):
             "affiliated_to",
             "catalog_items",
             "services",
+            "coordinations",
         ]
         disable_url = True  # Disables DjangoLDP auto-url generation
 
@@ -286,7 +288,9 @@ class Person(AbstractAgent):
             "logo_url",
             "promo_image_url",
             "phone_number",
+            "places",
         ]
+        nested_fields = ["affiliates", "places"]
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
@@ -658,3 +662,212 @@ class EnterpriseService(AbstractDFCModel):
 
     def __str__(self):
         return f"{self.service.name} ({self.enterprise})"
+
+
+class PhysicalPlaceAddress(AbstractAddress):
+    class Meta(AbstractAddress.Meta):
+        rdf_type = "dfc-b:Address"
+        serializer_fields = [
+            "@id",
+            "city",
+            "country",
+            "latitude",
+            "longitude",
+            "postcode",
+            "region",
+            "street",
+            "places",
+        ]
+        nested_fields = ["places"]
+
+    def __str__(self):
+        return self.urlid
+
+
+class PhysicalPlace(AbstractDFCModel):
+    address = fields.ForeignKey(
+        PhysicalPlaceAddress,
+        related_rdf_type="dfc-b:hasAddress",
+        rdf_type="dfc-b:addressOf",
+        blank=True,
+        null=True,
+        related_name="places",
+        on_delete=models.SET_NULL,
+    )
+    main_contact = fields.ForeignKey(
+        Person,
+        related_rdf_type="dfc-b:mainContactOf",
+        rdf_type="dfc-b:hasMainContact",
+        blank=True,
+        null=True,
+        related_name="places",
+        on_delete=models.SET_NULL,
+    )
+    phone_number = fields.TextField(
+        rdf_type="dfc-b:hasPhoneNumber",
+        blank=True,
+        null=True,
+    )
+    URL = fields.TextField(rdf_type="dfc-b:URL", blank=True, null=True)
+
+    class Meta:
+        rdf_type = "dfc-b:PhysicalPlace"
+        serializer_fields = ["address", "main_contact", "phone_number", "URL"]
+
+
+class Coordination(AbstractDFCModel):
+    """
+    A descriptor giving the coordinator of a Sales Session
+    and the percentage margin taken by the coordinator to manage the sale session.
+    """
+
+    name = fields.TextField(
+        rdf_type="dfc-b:name",
+        blank=True,
+        null=True,
+    )
+    enterprise = fields.ForeignKey(
+        Enterprise,
+        rdf_type="dfc-b:coordinates",
+        related_rdf_type="dfc-b:coordinatedBy",
+        blank=True,
+        null=True,
+        related_name="coordinations",
+        on_delete=models.CASCADE,
+        help_text=(
+            "Confirms the Enterprise Coordinates certain SaleSessions, "
+            "and defines margin percentage that the Enterprise takes for managing the SaleSession"
+        ),
+    )
+    margin_percent = fields.FloatField(
+        blank=True,
+        null=True,
+        rdf_type="dfc-b:marginPercent",
+        default=0.0,
+        help_text=(
+            "The percentage margin the coordinating Enterprise is charging as comission "
+            "for managing the Sales Session (from 0-100)"
+        ),
+    )
+
+    class Meta:
+        rdf_type = "dfc-b:Coordination"
+        serializer_fields = [
+            "@id",
+            "name",
+            "enterprise",
+            "margin_percent",
+            "sale_sessions",
+        ]
+        nested_fields = ["sale_sessions"]
+
+    def __str__(self):
+        return f"{self.name} ({self.enterprise})"
+
+
+class SaleSession(AbstractDFCModel):
+    """
+    Time bounded grouping of Offers for an Enterprise.
+    """
+
+    coordination = fields.ForeignKey(
+        Coordination,
+        rdf_type="dfc-b:objectOf",
+        related_rdf_type="dfc-b:hasObject",
+        help_text="The Coordination (that defines which Enterprise coordinates the Sales Sesison)",
+        blank=True,
+        null=True,
+        related_name="sale_sessions",
+        on_delete=models.CASCADE,
+    )
+    hosted_at = fields.ForeignKey(
+        PhysicalPlace,
+        rdf_type="dfc-b:hostedAt",
+        related_rdf_type="dfc-b:hosts",
+        blank=True,
+        null=True,
+        related_name="sale_sessions",
+        on_delete=models.SET_NULL,
+    )
+
+    quantity = fields.FloatField(blank=True, null=True, rdf_type="dfc-b:quantity")
+    start_date = fields.DateTimeField(rdf_type="dfc-b:startDate", blank=True, null=True)
+    end_date = fields.DateTimeField(rdf_type="dfc-b:endDate", blank=True, null=True)
+
+    class Meta:
+        rdf_type = "dfc-b:SaleSession"
+        serializer_fields = [
+            "@id",
+            "coordination",
+            "start_date",
+            "end_date",
+            "quantity",
+            "hosted_at",
+            "shipping_options",
+        ]
+        nested_fields = ["shipping_options"]
+
+    def __str__(self):
+        return f"{self.coordination} ({self.start_date} - {self.end_date})"
+
+
+class ShippingOption(AbstractDFCModel):
+    """
+    Pick-up options and Delivery options are available to the customer of a SaleSession.
+    """
+
+    sale_session = fields.ForeignKey(
+        SaleSession,
+        rdf_type="dfc-b:optionOf",
+        related_rdf_type="dfc-b:hasOption",
+        blank=True,
+        null=True,
+        related_name="shipping_options",
+        on_delete=models.CASCADE,
+    )
+    delivers_at = fields.ForeignKey(
+        PhysicalPlace,
+        rdf_type="dfc-b:deliversAt",
+        related_rdf_type="dfc-b:deliveries",
+        blank=True,
+        null=True,
+        related_name="deliveries",
+        on_delete=models.SET_NULL,
+    )
+    picked_up_at = fields.ForeignKey(
+        PhysicalPlace,
+        rdf_type="dfc-b:pickedUpAt",
+        related_rdf_type="dfc-b:collections",
+        blank=True,
+        null=True,
+        related_name="collections",
+        on_delete=models.SET_NULL,
+    )
+
+    has_type = fields.CharField(
+        choices=ShippingOptionType.choices,
+        blank=True,
+        null=True,
+        max_length=255,
+    )
+    fee = fields.FloatField(blank=True, null=True, rdf_type="dfc-b:fee")
+    quantity = fields.FloatField(blank=True, null=True, rdf_type="dfc-b:quantity")
+    start_date = fields.DateTimeField(rdf_type="dfc-b:startDate", blank=True, null=True)
+    end_date = fields.DateTimeField(rdf_type="dfc-b:endDate", blank=True, null=True)
+
+    class Meta:
+        rdf_type = "dfc-b:ShippingOption"
+        serializer_fields = [
+            "@id",
+            "has_type",
+            "fee",
+            "quantity",
+            "start_date",
+            "end_date",
+            "delivers_at",
+            "picked_up_at",
+            "sale_session",
+        ]
+
+    def __str__(self):
+        return f"{self.urlid} ({self.sale_session})"

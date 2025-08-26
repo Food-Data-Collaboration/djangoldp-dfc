@@ -1,7 +1,13 @@
 from django.db import models
 
 
+DFC_B_URL = "https://raw.githubusercontent.com/datafoodconsortium/ontology/refs/heads/master/src/DFC_BusinessOntology.owl"
 DFC_PT_URL = "https://raw.githubusercontent.com/datafoodconsortium/taxonomies/refs/heads/main/productTypes.rdf"
+
+
+class ShippingOptionType(models.TextChoices):
+    PICKUP = (f"{DFC_B_URL}#PickupOption","Pick-up")
+    DELIVERY = (f"{DFC_B_URL}#DeliveryOption","Delivery")
 
 
 class ProductType(models.TextChoices):

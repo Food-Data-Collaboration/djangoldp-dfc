@@ -87,3 +87,51 @@ class SuppliedProductAdmin(DFCModelAdmin):
         "supplied_by__proxy_of",
     ]
     list_display = ["urlid", "proxy_of", "name", "has_type", "supplied_by"]
+
+
+@admin.register(models.PhysicalPlace)
+class PhysicalPlaceAdmin(DFCModelAdmin):
+    search_fields = [
+        "urlid",
+        "proxy_of",
+        "address__city",
+        "address__country",
+        "address__postcode",
+        "address__region",
+        "address__street",
+        "main_contact__urlid",
+        "main_contact__proxy_of",
+        "main_contact__first_name",
+        "main_contact__last_name",
+        "main_contact__email",
+        "URL",
+        "phone_number",
+    ]
+    raw_id_fields = ["main_contact"]
+
+
+@admin.register(models.Coordination)
+class CoordinationAdmin(DFCModelAdmin):
+    search_fields = [
+        "urlid",
+        "proxy_of",
+        "name",
+        "enterprise__name",
+        "enterprise__urlid",
+        "enterprise__proxy_of",
+    ]
+    list_display = ["urlid", "name", "enterprise"]
+    raw_id_fields = ["enterprise"]
+
+
+@admin.register(models.SaleSession)
+class SaleSessionAdmin(DFCModelAdmin):
+    list_display = ["urlid", "coordination", "start_date", "end_date"]
+    raw_id_fields = ["hosted_at", "coordination"]
+
+
+@admin.register(models.ShippingOption)
+class ShippingOptionAdmin(DFCModelAdmin):
+    list_display = ["urlid", "sale_session", "has_type"]
+    list_filter = ["has_type"]
+    raw_id_fields = ["sale_session", "picked_up_at", "delivers_at"]
