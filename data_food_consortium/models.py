@@ -163,6 +163,7 @@ class Enterprise(AbstractAgent):
             "catalog_items",
             "services",
             "coordinations",
+            "customer_categories",
         ]
         nested_fields = [
             "addresses",
@@ -206,7 +207,6 @@ class EnterpriseAddress(AbstractAddress):
         rdf_type = "dfc-b:Address"
         serializer_fields = [
             "@id",
-            "address_of",
             "city",
             "country",
             "latitude",
@@ -244,7 +244,7 @@ class SocialMedia(AbstractDFCModel):
 
     class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:SocialMedia"
-        serializer_fields = ["@id", "enterprise", "name", "url"]
+        serializer_fields = ["@id", "name", "url"]
         container_path = "social_medias"
 
     def __str__(self):
@@ -280,7 +280,6 @@ class Person(AbstractAgent):
         rdf_type = "dfc-b:Person"
         serializer_fields = [
             "@id",
-            "affiliates",
             "first_name",
             "last_name",
             "email",
@@ -427,7 +426,6 @@ class SuppliedProduct(AbstractProduct):
             "image",
             "url",
             "is_variant_of",
-            "supplied_by",
         ]
         disable_url = True  # Disables DjangoLDP auto-url generation
         container_path = "supplied_products"
@@ -513,7 +511,6 @@ class CatalogItem(AbstractDFCModel):
         rdf_type = "dfc-b:CatalogItem"
         serializer_fields = [
             "@id",
-            "managed_by",
             "references",
             "extra_availability_time",
             "extra_delivery_condition",
@@ -529,6 +526,11 @@ class CatalogItem(AbstractDFCModel):
 
 
 class CustomerCategory(AbstractDFCModel):
+    name = fields.TextField(
+        rdf_type="dfc-b:name",
+        blank=True,
+        null=True,
+    )
     defined_by = fields.ForeignKey(
         Enterprise,
         related_rdf_type="dfc-b:defines",
@@ -541,15 +543,7 @@ class CustomerCategory(AbstractDFCModel):
 
     class Meta:
         rdf_type = "dfc-b:CustomerCategory"
-        serializer_fields = [
-            "@id",
-            "managed_by",
-            "references",
-            "extra_availability_time",
-            "extra_delivery_condition",
-            "sku",
-            "offers",
-        ]
+        serializer_fields = ["@id", "name", "offers"]
         nested_fields = ["offers"]
         container_path = "customer_categories"
 
@@ -605,7 +599,7 @@ class Offer(AbstractDFCModel):
 
     class Meta:
         rdf_type = "dfc-b:Offer"
-        serializer_fields = ["@id", "offers", "offered_to", "offered_for"]
+        serializer_fields = ["@id", "offered_for"]
 
     def __str__(self):
         return f"Offer of {self.offers} to {self.offered_to} for {self.offered_for}"
@@ -628,7 +622,7 @@ class Service(AbstractDFCModel):
 
     class Meta:
         rdf_type = "cqcm:Service"
-        serializer_fields = ["@id", "created_at", "updated_at", "name", "suppliers"]
+        serializer_fields = ["@id", "created_at", "updated_at", "name"]
         nested_fields = ["suppliers"]
 
     def __str__(self):
@@ -657,7 +651,7 @@ class EnterpriseService(AbstractDFCModel):
 
     class Meta:
         rdf_type = "cqcm:EnterpriseService"
-        serializer_fields = ["@id", "created_at", "updated_at", "enterprise", "service"]
+        serializer_fields = ["@id", "created_at", "updated_at", "service"]
         container_path = "enterprise_services"
 
     def __str__(self):
@@ -676,9 +670,7 @@ class PhysicalPlaceAddress(AbstractAddress):
             "postcode",
             "region",
             "street",
-            "places",
         ]
-        nested_fields = ["places"]
 
     def __str__(self):
         return self.urlid
@@ -692,8 +684,8 @@ class PhysicalPlace(AbstractDFCModel):
     )
     address = fields.ForeignKey(
         PhysicalPlaceAddress,
-        related_rdf_type="dfc-b:hasAddress",
-        rdf_type="dfc-b:addressOf",
+        related_rdf_type="dfc-b:addressOf",
+        rdf_type="dfc-b:hasAddress",
         blank=True,
         null=True,
         related_name="places",
@@ -720,7 +712,7 @@ class PhysicalPlace(AbstractDFCModel):
         serializer_fields = ["name", "address", "main_contact", "phone_number", "URL"]
 
     def __str__(self):
-        return self.name if self.name and len(self.name) else self.address
+        return self.name if self.name and len(self.name) else str(self.address)
 
 
 class Coordination(AbstractDFCModel):
@@ -763,7 +755,6 @@ class Coordination(AbstractDFCModel):
         serializer_fields = [
             "@id",
             "name",
-            "enterprise",
             "margin_percent",
             "sale_sessions",
         ]
@@ -806,7 +797,6 @@ class SaleSession(AbstractDFCModel):
         rdf_type = "dfc-b:SaleSession"
         serializer_fields = [
             "@id",
-            "coordination",
             "start_date",
             "end_date",
             "quantity",
@@ -874,7 +864,6 @@ class ShippingOption(AbstractDFCModel):
             "end_date",
             "delivers_at",
             "picked_up_at",
-            "sale_session",
         ]
 
     def __str__(self):
