@@ -5,9 +5,10 @@ import urllib
 from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
-from rdflib import Graph, URIRef
+from rdflib import BNode, Graph, URIRef
 from rdflib.exceptions import ParserError
 
+from djangoldp import fields
 from djangoldp.models import Model
 from djangoldp.serializers import LDPSerializer
 
@@ -59,12 +60,6 @@ class ProxyRefreshParser:
         subjects = set(graph.subjects())
 
         for subject in subjects:
-            # Ensure that the subject is not a blank node.
-            # TODO: allow blank nodes, but transfer their urlid to a global one
-            if not isinstance(subject, URIRef):
-                logger.error(f"ERR came across blank node in the input: {subject}")
-                continue
-
             # Evaluate the @type and find a corresponding model that we can store.
             resolved_model = None
             model_types = []
@@ -102,8 +97,14 @@ class ProxyRefreshParser:
                 if pred == RDF_TYPE_PREDICATE:
                     continue
 
-                # Handle both URIs and literals
-                value = str(obj) if isinstance(obj, URIRef) else obj.toPython()
+                # Map RDF values to Python values.
+                if isinstance(obj, BNode):
+                    # Blank nodes serialized into JSON.
+                    value = {p: o for p, o in graph.predicate_objects(obj)}
+                elif isinstance(obj, URIRef):
+                    value = str(obj)
+                else:
+                    value = obj.toPython()
                 resource_data[str(pred)] = value
 
                 # Create a copy so that we can tolerate compacted and expanded forms
@@ -128,6 +129,7 @@ class ProxyRefreshParser:
 
             # Map the RDF types to local model names where possible, and resolve foreign keys
             serialize_fields_extra = []
+            json_fields = {}
             for field in resolved_model._meta._get_fields(forward=True, reverse=True):
                 field_path = f"{resolved_model}.{field.name}"
                 rdf_type = None
@@ -182,6 +184,11 @@ class ProxyRefreshParser:
                 else:
                     resource_data[field.name] = resource_data.pop(rdf_type)
 
+                # Workaround for lack of JSONField support in DjangoLDP.
+                if isinstance(field, fields.JSONField):
+                    json_fields[field.name] = resource_data[field.name]
+                    resource_data.pop(field.name)
+
                 if (
                     hasattr(resolved_model._meta, "serializer_fields")
                     and field.name not in resolved_model._meta.serializer_fields
@@ -197,6 +204,12 @@ class ProxyRefreshParser:
             serializer = serializer_class(instance, data=resource_data)
             serializer.is_valid(raise_exception=True)
             instance = serializer.save()
+
+            # Workaround for lack of JSONField support in DjangoLDP.
+            if len(json_fields):
+                for field_name in json_fields:
+                    setattr(instance, field_name, json_fields[field_name])
+                instance.save()
 
     def clean_up(self):
         """
