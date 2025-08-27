@@ -83,9 +83,14 @@ class ProxyRefreshParser:
                     break
 
             if resolved_model is None:
-                logger.error(
-                    f"ERR could not resolve a model with configured type_uri {model_types}"
-                )
+                if set(model_types) != {
+                    "http://www.w3.org/ns/ldp#Container",
+                    "ldp:Container",
+                }:
+                    logger.warn(
+                        f"Unable to resolve a model with configured type_uri {model_types}."
+                        "If this is a container or a sequence, it is not a problem."
+                    )
                 continue
 
             # Parsing the graph into serializable data for our model
