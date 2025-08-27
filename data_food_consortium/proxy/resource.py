@@ -39,13 +39,14 @@ class ProxyRefreshParser:
         self.imported_models = set()
         self.import_started_at = timezone.now()
 
-    def get_serializer_class(self, model, depth=2):
+    def get_serializer_class(self, model, depth=2, extra_fields=[]):
         # NOTE: LDPSerializer cannot be used without meta args:
         #   https://git.startinblox.com/djangoldp-packages/djangoldp/-/issues/277
         meta_args = {
             "model": model,
             "depth": depth,
             "fields": "__all__",
+            "extra_fields": extra_fields,
         }
         meta_class = type("Meta", (), meta_args)
         return type(LDPSerializer)(
@@ -126,6 +127,7 @@ class ProxyRefreshParser:
             self.imported_models.add(resolved_model)
 
             # Map the RDF types to local model names where possible, and resolve foreign keys
+            serialize_fields_extra = []
             for field in resolved_model._meta._get_fields(forward=True, reverse=True):
                 field_path = f"{resolved_model}.{field.name}"
                 rdf_type = None
@@ -157,41 +159,41 @@ class ProxyRefreshParser:
                             f"Skipping field import {field_path} because the related model ({field.related_model}) is abstract"
                         )
                         continue
+                    if field.one_to_many or field.many_to_many:
+                        logger.info(
+                            f"Many-to-many field expected to be imported later {field_path}"
+                        )
+                        continue
 
                     related_instance_urlid = resource_data.pop(rdf_type)
                     related_instance = field.related_model.objects.filter(
-                        urlid=related_instance_urlid
+                        proxy_of=related_instance_urlid
                     ).first()
                     existing_data = {}
 
-                    if related_instance is not None:
-                        serializer_class = self.get_serializer_class(
-                            field.related_model
+                    if related_instance is None:
+                        related_instance = field.related_model.objects.create(
+                            proxy_of=related_instance_urlid
                         )
-                        existing_data = serializer_class(related_instance).data
 
-                    if field.one_to_many or field.many_to_many:
-                        # TODO: related_instance_urlid may not be a single value, since this is a many field
-                        resource_data[field.name] = {
-                            "ldp:contains": [
-                                {
-                                    "@id": related_instance_urlid,
-                                    field.field.name: {"@id": instance.urlid},
-                                }
-                                | existing_data
-                            ]
-                        }
-                    else:
-                        resource_data[field.name] = {
-                            "@id": related_instance_urlid
-                        } | existing_data
+                    resource_data[field.name] = {
+                        "@id": related_instance.urlid
+                    } | existing_data
                 else:
                     resource_data[field.name] = resource_data.pop(rdf_type)
+
+                if (
+                    hasattr(resolved_model._meta, "serializer_fields")
+                    and field.name not in resolved_model._meta.serializer_fields
+                ):
+                    serialize_fields_extra.append(field.name)
 
             # Use LDPSerializer with the resolved model to save it in our database.
             logger.debug(f"\nCOMMITTING SAVE: {resource_data}")
 
-            serializer_class = self.get_serializer_class(resolved_model, 10)
+            serializer_class = self.get_serializer_class(
+                resolved_model, 10, serialize_fields_extra
+            )
             serializer = serializer_class(instance, data=resource_data)
             serializer.is_valid(raise_exception=True)
             instance = serializer.save()
@@ -211,7 +213,7 @@ class ProxyRefreshParser:
         )
         missing_from_new_import = Q(
             updated_at__lt=self.import_started_at,
-            data_server_source=self.data_server_source,
+            data_server_source__startswith=self.data_server_source,
         )
 
         for imported_model in self.imported_models:
