@@ -90,6 +90,22 @@ class SuppliedProductAdmin(DFCModelAdmin):
     list_display = ["urlid", "proxy_of", "name", "has_type", "supplied_by"]
 
 
+@admin.register(models.CatalogItem)
+class CatalogItemAdmin(DFCModelAdmin):
+    search_fields = [
+        "urlid",
+        "proxy_of",
+        "managed_by__name",
+        "managed_by__urlid",
+        "managed_by__proxy_of",
+        "references__name",
+        "references__urlid",
+        "references__proxy_of",
+    ]
+    list_display = ["urlid", "proxy_of", "managed_by", "references"]
+    raw_id_display = ["managed_by", "references"]
+
+
 @admin.register(models.PhysicalPlace)
 class PhysicalPlaceAdmin(DFCModelAdmin):
     search_fields = [
