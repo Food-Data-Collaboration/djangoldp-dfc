@@ -5,8 +5,9 @@ from data_food_consortium import models
 
 
 class DFCModelAdmin(DjangoLDPAdmin):
-    list_display = ["urlid", "proxy_of"]
+    list_display = ["urlid", "proxy_of", "updated_at"]
     search_fields = ["urlid", "proxy_of"]
+    readonly_fields = ["created_at", "updated_at"]
 
 
 @admin.register(models.Enterprise)
