@@ -58,9 +58,9 @@ Data-servers implementing the DFC specifications will transmit webhooks to the p
 A Postman collection has been created to accompany these docs which provides example events.
 
 The webhook is called when one of three things happens:
-1. an resource which the proxy has access to has been created or updated. In this case, the data-server should POST the serialization of the object to the webhook directly, using the `eventType` `"update"`. A PUT operation will be performed with the data given.
-2. a resource which the proxy has access to has been deleted or permission to the object has been revoked. In this case, the data-server should POST the `@id` and `@type` of each resource revoked in a list under the key`objects`. It should use the `eventType` `"revoke"`.
-3. the proxy has had a scope permission given or revoked on the data-server (for a given enterprise). In this case, the `eventType` should be `"refresh"` and the `enterpriseUrlid` should be the `@id` of the enterprise which revoked their data.
+1. a resource which the proxy has access to has been created or updated. In this case, the data-server should POST the serialization of the object to the webhook directly, using the `eventType` `"update"`. A PUT operation will be performed with the data given.
+2. a resource which the proxy has access to has been deleted or permission to the object has been revoked. In this case, the data-server should POST the `@id` and `@type` of each resource _revoked_ in a list under the key `objects`. It should use the `eventType` `"revoke"`.
+3. the proxy has had a scope permission given or revoked on the data-server (for a given enterprise). In this case, the `eventType` should be `"refresh"`. The `enterpriseUrlid` should be the `@id` of the enterprise which granted/revoked their data.
 
 In all cases, the endpoint on the proxy server is `/djangoldp-dfc/webhook/`, and the request type is POST.
 
