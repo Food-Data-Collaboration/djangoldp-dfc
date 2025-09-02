@@ -4,11 +4,13 @@ from .views import (
     CacheWebhookView,
     EnterpriseViewset,
     EnterpriseImportView,
+    ProxyWebIDView,
     PersonViewset,
     SuppliedProductViewset,
 )
 
 urlpatterns = [
+    path("profile", ProxyWebIDView.as_view()),
     path("dfc/enterprise-import/", EnterpriseImportView.as_view(), name="csv_import"),
     path(
         "djangoldp-dfc/webhook/",

@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from djangoldp.filters import SearchByQueryParamFilterBackend
 from djangoldp.models import Model
 from djangoldp.views.ldp_viewset import LDPViewSet
+from djangoldp.views.webid import InstanceWebIDView
 from djangoldp_csv.errors import FieldParsingError
 from djangoldp_csv.views import BaseCSVImportView
 
@@ -120,3 +121,12 @@ class PersonViewset(LDPViewSet):
 
 class SuppliedProductViewset(LDPViewSet):
     filter_backends = [SearchByQueryParamFilterBackend]
+
+
+class ProxyWebIDView(InstanceWebIDView):
+    def get_profile_data(self, request):
+        profile_data = super().get_profile_data(request)
+        profile_data["dfc-t:scopes"] = (
+            "https://cdn.startinblox.com/owl/dfc/taxonomies/cqcm.jsonld"
+        )
+        return profile_data
