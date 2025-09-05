@@ -12,9 +12,9 @@ from rest_framework.exceptions import AuthenticationFailed
 def keycloak_is_configured():
     """Returns True if keycloak settings have been configured on the server."""
     return None not in [
-        settings.DFC_KEYCLOAK_URL,
-        settings.DFC_KEYCLOAK_CLIENT_ID,
-        settings.DFC_KEYCLOAK_CLIENT_SECRET,
+        settings.KEYCLOAK_URL,
+        settings.KEYCLOAK_CLIENT_ID,
+        settings.KEYCLOAK_CLIENT_SECRET,
     ]
 
 
@@ -36,15 +36,13 @@ class KeycloakClient:
 
     def get_access_token(self):
         payload = {
-            # "client_id": settings.DFC_KEYCLOAK_CLIENT_ID,
-            # "client_secret": settings.DFC_KEYCLOAK_CLIENT_SECRET,
-            "client_id": "https://locavora-data-server-staging.nn.r.appspot.com/",
-            "client_secret": "urvat4H59N3gye7OqP3JCfuMlwVrYUGF",
+            "client_id": settings.KEYCLOAK_CLIENT_ID,
+            "client_secret": settings.KEYCLOAK_CLIENT_SECRET,
             "grant_type": "client_credentials",
             "scope": self.scopes,
         }
 
-        response = requests.post(settings.DFC_KEYCLOAK_URL, data=payload)
+        response = requests.post(settings.KEYCLOAK_URL, data=payload)
 
         if response.status_code == 200:
             return response.json()["access_token"]
