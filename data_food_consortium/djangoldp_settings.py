@@ -23,3 +23,5 @@ DFC_KEYCLOAK_READ_SCOPES = {"ReadEnterprise": "enterprises/"}
 DFC_KEYCLOAK_MODEL_READ_SCOPES = {"dfc-b:Enterprise": "ReadEnterprise"}
 
 LDP_RDF_CONTEXT = "https://cdn.startinblox.com/owl/dfc.jsonld"
+
+MIDDLEWARE = ["data_food_consortium.middleware.DisbaleJWTMiddleware"]
