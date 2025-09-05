@@ -35,14 +35,13 @@ class CacheWebhookView(APIView):
 
     authentication_classes = [KeycloakResourceServerAuthentication]
 
-    def process(self, data):
+    def process(self, request, data):
         if data["eventType"] == WebhookEventType.UPDATE:
             # Parse and import the graph.
             # TODO: trigger optional behaviour in the parser to fail loudly.
             ProxyRefreshParser(data, data["@id"]).parse()
         elif data["eventType"] == WebhookEventType.REFRESH:
-            # TODO: Replace dataserver key with Keycloak claim
-            ResourceServerClient(data["dataserver"]).request_scope(data["scope"])
+            ResourceServerClient(request.platform_urlid).request_scope(data["scope"])
         elif data["eventType"] == WebhookEventType.REVOKE:
             for obj in data["objects"]:
                 Model.get_subclass_with_rdf_type(obj["@type"]).objects.filter(
@@ -84,7 +83,7 @@ class CacheWebhookView(APIView):
                         status=400,
                     )
 
-        self.process(data)
+        self.process(request, data)
         return Response({}, status=200)
 
 
