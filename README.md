@@ -18,6 +18,7 @@ Each proxy operates as a cache of the data from one or several DFC sources. The 
 
 To use live data with your application you will need to configure Keycloak. Before using the features described please set the following environment variables:
 * `KEYCLOAK_URL`
+* `KEYCLOAK_REALM`
 * `KEYCLOAK_CLIENT_ID`
 * `KEYCLOAK_CLIENT_SECRET`
 
@@ -66,7 +67,7 @@ The webhook is called when one of three things happens:
 2. a resource which the proxy has access to has been deleted or permission to the object has been revoked. In this case, the data-server should POST the `@id` and `@type` of each resource _revoked_ in a list under the key `objects`. It should use the `eventType` `"revoke"`.
 3. the proxy has had a scope permission given or revoked on the data-server (for a given enterprise). In this case, the `eventType` should be `"refresh"`. The `enterpriseUrlid` should be the `@id` of the enterprise which granted/revoked their data.
 
-In all cases, the endpoint on the proxy server is `/djangoldp-dfc/webhook/`, and the request type is POST.
+In all cases, the endpoint on the proxy server is `/djangoldp-dfc/webhook/`, and the request type is POST. Webhook requests MUST be authenticated, using a valid Keycloak client from the `KEYCLOAK_URL` and `KEYCLOAK_REALM`.
 
 ## Contributing
 

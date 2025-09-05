@@ -15,6 +15,7 @@ from djangoldp_csv.errors import FieldParsingError
 from djangoldp_csv.views import BaseCSVImportView
 
 from data_food_consortium.forms import EnterpriseImportForm
+from data_food_consortium.proxy.keycloak import KeycloakResourceServerAuthentication
 from data_food_consortium.proxy.resource import ProxyRefreshParser, ResourceServerClient
 
 
@@ -32,6 +33,8 @@ class CacheWebhookView(APIView):
     An endpoint which accepts POST requests from a data source directing cache refreshes on the existing data.
     """
 
+    authentication_classes = [KeycloakResourceServerAuthentication]
+
     def process(self, data):
         if data["eventType"] == WebhookEventType.UPDATE:
             # Parse and import the graph.
@@ -47,7 +50,6 @@ class CacheWebhookView(APIView):
                 ).delete()
 
     def post(self, request, *args, **kwargs):
-        # TODO: Keycloak authentication. Respond 401 if the token is invalid.
         data = request.data
         # TODO: respond 403 id the keycloak token is valid, but doesn't correspond to the host of the resource given in @id
 
