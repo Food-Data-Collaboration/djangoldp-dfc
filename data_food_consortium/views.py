@@ -127,7 +127,7 @@ class SuppliedProductViewset(LDPViewSet):
 class ProxyWebIDView(InstanceWebIDView):
     def get_profile_data(self, request):
         profile_data = super().get_profile_data(request)
-        profile_data["dfc-t:scopes"] = (
+        profile_data["dfc-t:requestedScopes"] = (
             "https://cdn.startinblox.com/owl/dfc/taxonomies/cqcm.jsonld"
         )
         return profile_data
