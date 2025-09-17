@@ -1,6 +1,7 @@
 import logging
 import validators
 from enum import StrEnum
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.shortcuts import render
@@ -41,7 +42,10 @@ class CacheWebhookView(APIView):
             # TODO: trigger optional behaviour in the parser to fail loudly.
             ProxyRefreshParser(data, data["@id"]).parse()
         elif data["eventType"] == WebhookEventType.REFRESH:
-            ResourceServerClient(request.platform_urlid).request_scope(data["scope"])
+            host = urlparse(request.platform_urlid)
+            ResourceServerClient(f"{host.scheme}://{host.netloc}/").request_scope(
+                data["scope"]
+            )
         elif data["eventType"] == WebhookEventType.REVOKE:
             for obj in data["objects"]:
                 Model.get_subclass_with_rdf_type(obj["@type"]).objects.filter(
