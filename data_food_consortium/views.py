@@ -40,7 +40,7 @@ class CacheWebhookView(APIView):
         if data["eventType"] == WebhookEventType.UPDATE:
             # Parse and import the graph.
             # TODO: trigger optional behaviour in the parser to fail loudly.
-            ProxyRefreshParser(data, data["@id"]).parse()
+            ProxyRefreshParser(data["@id"]).parse(data)
         elif data["eventType"] == WebhookEventType.REFRESH:
             host = urlparse(request.platform_urlid)
             ResourceServerClient(f"{host.scheme}://{host.netloc}/").request_scope(
