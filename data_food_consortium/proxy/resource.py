@@ -248,8 +248,9 @@ class ResourceServerClient:
 
     def __init__(self, dataserver_url):
         self.dataserver_url = dataserver_url
-
         self.scope_config = settings.DFC_KEYCLOAK_READ_SCOPES.copy()
+        logger.debug(f"Dataserver URL is: {dataserver_url}")
+
         response = requests.get(f"{dataserver_url}.well-known/dfc/")
         if response.status_code == 200:
             data_server_endpoints = response.json()
