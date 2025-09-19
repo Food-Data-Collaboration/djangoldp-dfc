@@ -267,7 +267,7 @@ class ResourceServerClient:
         else:
             logger.warn(
                 "Configured ResourceServerClient with default config, "
-                f"discovery endpoint {discovery_endpoint}.well-known/dfc/ responded {response.status_code}"
+                f"discovery endpoint {discovery_endpoint} responded {response.status_code}"
             )
 
     def request_all_scopes(self):
