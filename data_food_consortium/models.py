@@ -812,6 +812,8 @@ class ShippingOption(AbstractDFCModel):
 
     enterprise = fields.ForeignKey(
         Enterprise,
+        rdf_type="cqcm:optionOf",
+        related_rdf_type="cqcm:shippingOptions",
         blank=True,
         null=True,
         related_name="shipping_options",
