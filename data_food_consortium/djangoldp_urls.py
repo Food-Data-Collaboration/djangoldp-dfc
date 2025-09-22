@@ -27,6 +27,7 @@ urlpatterns = [
                 "catalog_items",
                 "services",
                 "coordinations",
+                "shipping_options",
             ],
         ),
     ),

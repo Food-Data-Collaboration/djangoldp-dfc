@@ -164,6 +164,7 @@ class Enterprise(AbstractAgent):
             "services",
             "coordinations",
             "customer_categories",
+            "shipping_options",
         ]
         nested_fields = [
             "addresses",
@@ -173,6 +174,7 @@ class Enterprise(AbstractAgent):
             "catalog_items",
             "services",
             "coordinations",
+            "shipping_options",
         ]
         disable_url = True  # Disables DjangoLDP auto-url generation
 
@@ -808,6 +810,14 @@ class ShippingOption(AbstractDFCModel):
     Pick-up options and Delivery options are available to the customer of a SaleSession.
     """
 
+    enterprise = fields.ForeignKey(
+        Enterprise,
+        blank=True,
+        null=True,
+        related_name="shipping_options",
+        on_delete=models.CASCADE,
+        help_text="Automatically set to the enterprise coordinating the SaleSession. Not part of the DFC standard",
+    )
     sale_session = fields.ForeignKey(
         SaleSession,
         rdf_type="dfc-b:optionOf",
@@ -862,3 +872,12 @@ class ShippingOption(AbstractDFCModel):
 
     def __str__(self):
         return f"{self.urlid} ({self.sale_session})"
+
+    def save(self, *args, **kwargs):
+        if (
+            self.sale_session
+            and self.sale_session.coordination
+            and self.sale_session.coordination.enterprise
+        ):
+            self.enterprise = self.sale_session.coordination.enterprise
+        return super().save(*args, **kwargs)
