@@ -18,6 +18,7 @@ from djangoldp_csv.views import BaseCSVImportView
 from data_food_consortium.forms import EnterpriseImportForm
 from data_food_consortium.proxy.keycloak import KeycloakResourceServerAuthentication
 from data_food_consortium.proxy.resource import ProxyRefreshParser, ResourceServerClient
+from data_food_consortium.serializers import EnterpriseSerializer
 
 
 logger = logging.getLogger("djangoldp")
@@ -118,6 +119,7 @@ class EnterpriseImportView(BaseCSVImportView):
 
 class EnterpriseViewset(LDPViewSet):
     filter_backends = [SearchByQueryParamFilterBackend]
+    serializer_class = EnterpriseSerializer
 
 
 class PersonViewset(LDPViewSet):

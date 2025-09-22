@@ -164,6 +164,7 @@ class Enterprise(AbstractAgent):
             "services",
             "coordinations",
             "customer_categories",
+            "dropoff_points",
         ]
         nested_fields = [
             "addresses",
@@ -179,16 +180,11 @@ class Enterprise(AbstractAgent):
     def __str__(self):
         return self.urlid
 
-    # coordinates = models.TextField(blank=True, null=True) # Reverse on Coordination model
     # defines = models.TextField(blank=True, null=True) # Reverse on CustomerCategory model
     # maintains = models.TextField(blank=True, null=True) reverse on Catalog
     # orders = models.TextField(blank=True, null=True) from subclassing Agent. Reverse on Orders
     # owns = models.TextField(blank=True, null=True) from subclassing Agent. Reverse on Brand
-    # proposes = models.TextField(blank=True, null=True) reverse on TechnicalProduct
-    # requests = models.TextField(blank=True, null=True) reverse on FunctionalProduct
     # sells = models.TextField(blank=True, null=True) FK to model Order
-    # The entity responsible for the sale (could be the Enterprise or a Salesperson within that Enterprise, or a third party)
-    # supplies = models.TextField(blank=True, null=True) reverse on SuppliedProduct
     # transforms = models.TextField(blank=True, null=True) FK to model "as planned local transformation"
 
 
@@ -355,7 +351,6 @@ class AbstractProduct(AbstractDFCModel):
     )
 
     # TODO: has_unit (dfc-b:hasUnit): a dfc-m:Unit value
-    # TODO: Image: URI field
 
     # TODO: Currently no serialization of reverse in the relationship. Wanted to avoid polymorphism if possible, but a product can be a
     # variant of a product, or a product group, for example
