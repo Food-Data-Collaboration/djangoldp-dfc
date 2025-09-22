@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 
 from django.conf import settings
 from django.shortcuts import render
+from django.urls.resolvers import get_resolver
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -120,6 +121,48 @@ class EnterpriseImportView(BaseCSVImportView):
 class EnterpriseViewset(LDPViewSet):
     filter_backends = [SearchByQueryParamFilterBackend]
     serializer_class = EnterpriseSerializer
+
+    def get_serializer_class(self):
+        model_name = self.model._meta.object_name.lower()
+        try:
+            lookup_field = get_resolver().reverse_dict[model_name + "-detail"][0][0][1][
+                0
+            ]
+        except:
+            lookup_field = "urlid"
+
+        meta_args = {
+            "model": self.model,
+            "extra_kwargs": {"@id": {"lookup_field": lookup_field}},
+            "depth": self.get_depth(),
+            "extra_fields": self.nested_fields + ["dropoff_points"],
+        }
+
+        if self.fields:
+            meta_args["fields"] = self.fields
+        else:
+            meta_args["exclude"] = self.exclude or getattr(
+                self.model._meta, "serializer_fields_exclude", ()
+            )
+        # create the Meta class to associate to LDPSerializer, using meta_args param
+
+        from djangoldp.serializers import LDPSerializer
+
+        if self.serializer_class is None:
+            self.serializer_class = LDPSerializer
+
+        parent_meta = (
+            (self.serializer_class.Meta,)
+            if hasattr(self.serializer_class, "Meta")
+            else ()
+        )
+        meta_class = type("Meta", parent_meta, meta_args)
+
+        return type(self.serializer_class)(
+            self.model._meta.object_name.lower() + "Serializer",
+            (self.serializer_class,),
+            {"Meta": meta_class},
+        )
 
 
 class PersonViewset(LDPViewSet):

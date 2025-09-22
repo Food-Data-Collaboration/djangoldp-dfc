@@ -164,7 +164,6 @@ class Enterprise(AbstractAgent):
             "services",
             "coordinations",
             "customer_categories",
-            "dropoff_points",
         ]
         nested_fields = [
             "addresses",
