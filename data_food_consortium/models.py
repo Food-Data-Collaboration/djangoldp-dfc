@@ -478,7 +478,7 @@ class CatalogItem(AbstractDFCModel):
         blank=True,
         null=True,
         related_name="catalog_items",
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
     )
     # TODO: "references" should be a ForeignKey to any DefinedProduct implementation
     #   https://git.startinblox.com/djangoldp-packages/djangoldp/-/issues/446
@@ -489,7 +489,7 @@ class CatalogItem(AbstractDFCModel):
         blank=True,
         null=True,
         related_name="referenced_by",
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
     )
 
     extra_availability_time = fields.TextField(
