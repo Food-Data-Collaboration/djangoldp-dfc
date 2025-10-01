@@ -13,7 +13,11 @@ class AbstractDFCModel(Model):
         blank=True,
         null=True,
     )
-    proxy_of = fields.LDPUrlField(rdf_type="dfc-t:proxyOf", blank=True, null=True)
+    # NOTE: In PostgreSQL, a high max_length like this won't have a performance impact,
+    # 2000 is a practical limit for URLs.
+    proxy_of = fields.LDPUrlField(
+        rdf_type="dfc-t:proxyOf", blank=True, null=True, max_length=2000
+    )
 
     class Meta(Model.Meta):
         abstract = True
