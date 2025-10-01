@@ -68,18 +68,14 @@ class AbstractAgent(AbstractDFCModel):
         blank=True,
         null=True,
     )  # xsd:String
-    # TODO: revisit max_length parameter based on explicit or implicit limit of the ontology
     logo = fields.TextField(
         rdf_type="dfc-b:logo",
-        max_length=255,
         blank=True,
         null=True,
     )  # xsd:anyURI
-    logo_url = fields.TextField(
-        rdf_type="ofn:logo_url", max_length=255, blank=True, null=True
-    )
+    logo_url = fields.TextField(rdf_type="ofn:logo_url", blank=True, null=True)
     promo_image_url = fields.TextField(
-        rdf_type="ofn:promo_image_url", max_length=255, blank=True, null=True
+        rdf_type="ofn:promo_image_url", blank=True, null=True
     )
     phone_number = fields.TextField(
         rdf_type="dfc-b:hasPhoneNumber",
