@@ -54,39 +54,44 @@ class ProxyRefreshParser:
             "LDPSerializer", (LDPSerializer,), {"Meta": meta_class}
         )
 
+    def resolve_model_for_subject(self, graph, subject):
+        """Discovers a DjangoLDP model for a given RDF subject."""
+        model_types = []
+        for type_uri in graph.objects(subject, RDF_TYPE_PREDICATE):
+            try:
+                model_types += [str(type_uri), graph.qname(type_uri)]
+            except (ValueError, KeyError) as e:
+                logger.warn(
+                    f"Unable to use compacted form of {type_uri}. RDFLib error: {e}"
+                )
+
+        for type_uri in model_types:
+            resolved_model = Model.get_subclass_with_rdf_type(type_uri)
+            if resolved_model is not None:
+                return resolved_model, type_uri
+
+        # Unable to resolve model, log error if necessary.
+        if set(model_types) != {
+            "http://www.w3.org/ns/ldp#Container",
+            "ldp:Container",
+        }:
+            logger.warn(
+                f"Unable to resolve a model with configured type_uri {model_types}."
+                "If this is a container or a sequence, it is not a problem."
+            )
+
+        return None, None
+
     def parse(self, jsonld_data):
         graph = Graph()
         graph.parse(data=jsonld_data, format="json-ld")
         subjects = set(graph.subjects())
 
         for subject in subjects:
-            # Evaluate the @type and find a corresponding model that we can store.
-            resolved_model = None
-            model_types = []
-            resolved_type_uri = None
-            for type_uri in graph.objects(subject, RDF_TYPE_PREDICATE):
-                try:
-                    model_types += [str(type_uri), graph.qname(type_uri)]
-                except (ValueError, KeyError) as e:
-                    logger.warn(
-                        f"Unable to use compacted form of {type_uri}. RDFLib error: {e}"
-                    )
-
-            for type_uri in model_types:
-                resolved_model = Model.get_subclass_with_rdf_type(type_uri)
-                if resolved_model is not None:
-                    resolved_type_uri = type_uri
-                    break
-
+            resolved_model, resolved_type_uri = self.resolve_model_for_subject(
+                graph, subject
+            )
             if resolved_model is None:
-                if set(model_types) != {
-                    "http://www.w3.org/ns/ldp#Container",
-                    "ldp:Container",
-                }:
-                    logger.warn(
-                        f"Unable to resolve a model with configured type_uri {model_types}."
-                        "If this is a container or a sequence, it is not a problem."
-                    )
                 continue
 
             # Parsing the graph into serializable data for our model
