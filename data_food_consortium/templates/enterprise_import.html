@@ -1,0 +1,17 @@
+<html>
+    <body>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form }}
+            <br/><br/>
+            {% if success %}
+                <p>Form uploaded successfully.</p>
+            {% elif form.errors %}
+                <div style="color: #cc0000">
+                    {{ form.errors }}
+                </div>
+            {% endif %}
+            <input type="submit" value="Submit">
+        </form>
+    </body>
+</html>
