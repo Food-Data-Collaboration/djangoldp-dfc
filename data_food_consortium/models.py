@@ -1,3 +1,6 @@
+from rdflib import Graph
+
+from django.contrib import admin
 from django.db import models
 from djangoldp import fields
 from djangoldp.models import Model
@@ -926,3 +929,45 @@ class ShippingOption(AbstractDFCModel):
         ):
             self.enterprise = self.sale_session.coordination.enterprise
         return super().save(*args, **kwargs)
+
+
+class ResourceImportRecord(models.Model):
+    """
+    A report corresponding to an import of data onto this proxy (e.g. via webhook or import command)
+    Only stored if these reports are configured in settings.
+    """
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    import_started_at = models.DateTimeField()
+    data_batches = fields.JSONField(
+        blank=True,
+        null=True,
+        help_text="A list of the JSON data received from the data-server, received in batches",
+    )
+    data_server_source = fields.TextField(blank=True, null=True)
+    imported_models = fields.TextField(
+        blank=True,
+        null=True,
+        help_text="The models which were imported based on the webhook data",
+    )
+    imported_subjects = fields.TextField(
+        blank=True, null=True, help_text="The instances found in the data"
+    )
+    deleted_subjects = fields.TextField(
+        blank=True,
+        null=True,
+        help_text="Instances which were discarded as a result of the import, e.g. if permission was removed",
+    )
+
+    def __str__(self):
+        return f"{self.data_server_source} ({self.import_started_at})"
+
+    @property
+    @admin.display(description="Parsed data batches")
+    def parsed_data(self):
+        result = []
+        for data_batch in self.data_batches:
+            graph = Graph()
+            graph.parse(data=data_batch, format="json-ld")
+            result.append(graph.serialize(format="json-ld"))
+        return result

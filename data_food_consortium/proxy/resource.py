@@ -12,6 +12,7 @@ from djangoldp import fields
 from djangoldp.models import Model
 from djangoldp.serializers import LDPSerializer
 
+from data_food_consortium.models import ResourceImportRecord
 from data_food_consortium.proxy.keycloak import (
     KeycloakAuthenticationException,
     KeycloakClient,
@@ -33,12 +34,21 @@ class ProxyRefreshParser:
     data_server_source = ""
     import_started_at = None
     imported_models = None
+    imported_subjects = None
+    deleted_subjects = None
+    data_batches = None
 
     def __init__(self, data_server_source):
         dss = urllib.parse.urlparse(data_server_source)
         self.data_server_source = f"{dss.scheme}://{dss.netloc}"
-        self.imported_models = set()
         self.import_started_at = timezone.now()
+        self.imported_models = set()
+        self.imported_subjects = list()
+        self.deleted_subjects = list()
+        self.data_batches = list()
+
+    def _cache_data_batch(self, data):
+        self.data_batches.append(data)
 
     def get_serializer_class(self, model, depth=2, extra_fields=[]):
         # NOTE: LDPSerializer cannot be used without meta args:
@@ -135,6 +145,7 @@ class ProxyRefreshParser:
                     allow_create_backlink=False,
                 )
             self.imported_models.add(resolved_model)
+            self.imported_subjects.append(instance.proxy_of)
 
             # Map the RDF types to local model names where possible, and resolve foreign keys
             serialize_fields_extra = []
@@ -235,6 +246,9 @@ class ProxyRefreshParser:
                     setattr(instance, field_name, json_fields[field_name])
                 instance.save()
 
+        logger.info(f"Finished importing {len(self.imported_subjects)} subjects")
+        self._cache_data_batch(jsonld_data)
+
     def clean_up(self):
         """
         LDPSerializer creates objects implicitly that in our case become duplicate objects, because of the requirement that
@@ -256,10 +270,24 @@ class ProxyRefreshParser:
         for imported_model in self.imported_models:
             deleted = imported_model.objects.filter(
                 ldp_serializer_created | missing_from_new_import
-            ).delete()
-            logger.debug(
+            )
+            self.deleted_subjects += [d.proxy_of for d in deleted]
+            deleted.delete()
+            logger.info(
                 f"Deleted {deleted} instances of {imported_model} during cleanup on data source {self.data_server_source}"
             )
+
+    def create_record(self):
+        self.imported_subjects.sort()
+        ResourceImportRecord.objects.create(
+            import_started_at=self.import_started_at,
+            data_batches=self.data_batches,
+            data_server_source=self.data_server_source,
+            imported_models="\n".join([str(m) for m in self.imported_models]),
+            imported_subjects="\n".join(self.imported_subjects),
+            deleted_subjects="\n".join(self.deleted_subjects),
+        )
+        logger.info(f"Import finished at {timezone.now()}. Report created in database")
 
 
 class ResourceServerClient:
@@ -345,3 +373,5 @@ class ResourceServerClient:
         parser = ProxyRefreshParser(endpoint)
         self._request_and_process_scope_at_endpoint(parser, scope, endpoint)
         parser.clean_up()
+        if settings.DFC_STORE_IMPORT_REPORTS:
+            parser.create_record()

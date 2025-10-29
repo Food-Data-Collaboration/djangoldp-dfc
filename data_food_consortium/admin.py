@@ -165,3 +165,9 @@ class ShippingOptionAdmin(DFCModelAdmin):
     list_display = ["urlid", "sale_session", "has_type"]
     list_filter = ["has_type"]
     raw_id_fields = ["sale_session", "picked_up_at", "delivers_at"]
+
+
+@admin.register(models.ResourceImportRecord)
+class ResourceImportRecordAdmin(admin.ModelAdmin):
+    list_display = ["import_started_at", "data_server_source"]
+    readonly_fields = ["parsed_data"]

@@ -14,6 +14,8 @@ KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET")
 
 # Dataservers that this platform caches data from.
 DFC_DATASERVER_URLS = os.getenv("DATASERVER_URLS", "").split(",")
+# Set to False to disable storing logs of dataserver imports in the database.
+DFC_STORE_IMPORT_REPORTS = True
 
 # Defines the default read scopes, if not overridden during the Discovery mechanism.
 # TODO: ReadOrders and ReadProducts aren't implemented on the staging data-server, but should be included.
