@@ -5,7 +5,11 @@ from django.db import models
 from djangoldp import fields
 from djangoldp.models import Model
 
-from data_food_consortium.enums import ProductType, ShippingOptionType
+from data_food_consortium.enums import (
+    ProductType,
+    ResourceImportSource,
+    ShippingOptionType,
+)
 
 
 class AbstractDFCModel(Model):
@@ -957,6 +961,13 @@ class ResourceImportRecord(models.Model):
         blank=True,
         null=True,
         help_text="Instances which were discarded as a result of the import, e.g. if permission was removed",
+    )
+    source = fields.CharField(
+        choices=ResourceImportSource.choices,
+        blank=True,
+        null=True,
+        max_length=64,
+        help_text="How the import was triggered (e.g. via the command line or webhook)",
     )
 
     def __str__(self):

@@ -15,6 +15,7 @@ from djangoldp.views.webid import InstanceWebIDView
 from djangoldp_csv.errors import FieldParsingError
 from djangoldp_csv.views import BaseCSVImportView
 
+from data_food_consortium.enums import ResourceImportSource
 from data_food_consortium.forms import EnterpriseImportForm
 from data_food_consortium.proxy.keycloak import KeycloakResourceServerAuthentication
 from data_food_consortium.proxy.resource import ProxyRefreshParser, ResourceServerClient
@@ -40,11 +41,14 @@ class CacheWebhookView(APIView):
         if data["eventType"] == WebhookEventType.UPDATE:
             # Parse and import the graph.
             # TODO: trigger optional behaviour in the parser to fail loudly.
-            ProxyRefreshParser(data["@id"]).parse(data)
+            parser = ProxyRefreshParser(data["@id"])
+            parser.parse(data)
+            if settings.DFC_STORE_IMPORT_REPORTS:
+                parser.create_record(ResourceImportSource.UPDATE_WEBHOOK)
         elif data["eventType"] == WebhookEventType.REFRESH:
             host = urlparse(request.platform_urlid)
             ResourceServerClient(f"{host.scheme}://{host.netloc}/").request_scope(
-                data["scope"]
+                data["scope"], ResourceImportSource.REFRESH_WEBHOOK
             )
         elif data["eventType"] == WebhookEventType.REVOKE:
             for obj in data["objects"]:

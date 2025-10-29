@@ -12,6 +12,7 @@ from djangoldp import fields
 from djangoldp.models import Model
 from djangoldp.serializers import LDPSerializer
 
+from data_food_consortium.enums import ResourceImportSource
 from data_food_consortium.models import ResourceImportRecord
 from data_food_consortium.proxy.keycloak import (
     KeycloakAuthenticationException,
@@ -277,7 +278,7 @@ class ProxyRefreshParser:
                 f"Deleted {deleted} instances of {imported_model} during cleanup on data source {self.data_server_source}"
             )
 
-    def create_record(self):
+    def create_record(self, source: ResourceImportSource):
         self.imported_subjects.sort()
         ResourceImportRecord.objects.create(
             import_started_at=self.import_started_at,
@@ -286,6 +287,7 @@ class ProxyRefreshParser:
             imported_models="\n".join([str(m) for m in self.imported_models]),
             imported_subjects="\n".join(self.imported_subjects),
             deleted_subjects="\n".join(self.deleted_subjects),
+            source=source,
         )
         logger.info(f"Import finished at {timezone.now()}. Report created in database")
 
@@ -322,10 +324,10 @@ class ResourceServerClient:
                 f"discovery endpoint {discovery_endpoint} responded {response.status_code}"
             )
 
-    def request_all_scopes(self):
+    def request_all_scopes(self, source: ResourceImportSource):
         for scope in settings.DFC_KEYCLOAK_READ_SCOPES:
             try:
-                self.request_scope(scope)
+                self.request_scope(scope, source)
             except KeycloakAuthenticationException as e:
                 msg = f"ERR authenticating dataserver {self.dataserver_url} with Keycloak, while requesting {scope}"
                 logger.error(msg)
@@ -361,7 +363,7 @@ class ResourceServerClient:
         if "next" in data and data["next"] is not None:
             self._request_and_process_scope_at_endpoint(parser, scope, data["next"])
 
-    def request_scope(self, scope: str):
+    def request_scope(self, scope: str, source: ResourceImportSource):
         """
         Discovers the appropriate endpoint for a scope, and then processes it.
 
@@ -374,4 +376,4 @@ class ResourceServerClient:
         self._request_and_process_scope_at_endpoint(parser, scope, endpoint)
         parser.clean_up()
         if settings.DFC_STORE_IMPORT_REPORTS:
-            parser.create_record()
+            parser.create_record(source)

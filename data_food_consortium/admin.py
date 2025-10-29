@@ -3,6 +3,7 @@ from django.contrib import admin
 from djangoldp.admin import DjangoLDPAdmin
 
 from data_food_consortium import models
+from data_food_consortium.enums import ResourceImportSource
 from data_food_consortium.proxy.resource import ProxyRefreshParser
 
 
@@ -177,11 +178,12 @@ def retry_import(modeladmin, request, queryset):
             parser.parse(data_batch)
             parser.clean_up()
             if settings.DFC_STORE_IMPORT_REPORTS:
-                parser.create_record()
+                parser.create_record(ResourceImportSource.ADMIN_SITE)
 
 
 @admin.register(models.ResourceImportRecord)
 class ResourceImportRecordAdmin(admin.ModelAdmin):
-    list_display = ["import_started_at", "data_server_source"]
+    list_display = ["import_started_at", "data_server_source", "source"]
+    list_filter = ["source"]
     readonly_fields = ["parsed_data"]
     actions = [retry_import]
