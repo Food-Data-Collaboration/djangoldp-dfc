@@ -5,7 +5,7 @@ from data_food_consortium import models
 
 
 class DFCModelAdmin(DjangoLDPAdmin):
-    list_display = ["urlid", "proxy_of", "updated_at"]
+    list_display = ["urlid", "proxy_of", "data_server_source", "updated_at"]
     search_fields = ["urlid", "proxy_of"]
     readonly_fields = ["created_at", "updated_at"]
 
@@ -87,7 +87,14 @@ class SuppliedProductAdmin(DFCModelAdmin):
         "supplied_by__urlid",
         "supplied_by__proxy_of",
     ]
-    list_display = ["urlid", "proxy_of", "name", "has_type", "supplied_by"]
+    list_display = [
+        "urlid",
+        "proxy_of",
+        "data_server_source",
+        "name",
+        "has_type",
+        "supplied_by",
+    ]
 
 
 @admin.register(models.CatalogItem)
@@ -102,7 +109,13 @@ class CatalogItemAdmin(DFCModelAdmin):
         "references__urlid",
         "references__proxy_of",
     ]
-    list_display = ["urlid", "proxy_of", "managed_by", "references"]
+    list_display = [
+        "urlid",
+        "proxy_of",
+        "data_server_source",
+        "managed_by",
+        "references",
+    ]
     raw_id_display = ["managed_by", "references"]
 
 
