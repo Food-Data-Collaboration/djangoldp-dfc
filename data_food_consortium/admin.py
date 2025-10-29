@@ -1,7 +1,9 @@
+from django.conf import settings
 from django.contrib import admin
 from djangoldp.admin import DjangoLDPAdmin
 
 from data_food_consortium import models
+from data_food_consortium.proxy.resource import ProxyRefreshParser
 
 
 class DFCModelAdmin(DjangoLDPAdmin):
@@ -167,7 +169,19 @@ class ShippingOptionAdmin(DFCModelAdmin):
     raw_id_fields = ["sale_session", "picked_up_at", "delivers_at"]
 
 
+@admin.action(description="Retry import")
+def retry_import(modeladmin, request, queryset):
+    for record in queryset:
+        for data_batch in record.data_batches:
+            parser = ProxyRefreshParser(record.data_server_source)
+            parser.parse(data_batch)
+            parser.clean_up()
+            if settings.DFC_STORE_IMPORT_REPORTS:
+                parser.create_record()
+
+
 @admin.register(models.ResourceImportRecord)
 class ResourceImportRecordAdmin(admin.ModelAdmin):
     list_display = ["import_started_at", "data_server_source"]
     readonly_fields = ["parsed_data"]
+    actions = [retry_import]
