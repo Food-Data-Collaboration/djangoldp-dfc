@@ -145,7 +145,7 @@ class ProxyRefreshParser:
                 ):
                     rdf_type = field.remote_field.related_rdf_type
                 # Otherwise the field must have an RDF type configured to be considered
-                elif not hasattr(field, "rdf_type"):
+                elif not hasattr(field, "rdf_type") or field.rdf_type is None:
                     logger.warn(
                         f"Skipping field import {field_path} because it lacks rdf_type"
                     )
