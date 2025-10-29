@@ -157,6 +157,19 @@ class ProxyRefreshParser:
                 else:
                     rdf_type = field.rdf_type
 
+                # Attempt to fall back on expanded form, if compacted form is not in the dataset
+                try:
+                    rdf_type = (
+                        graph.namespace_manager.expand_curie(rdf_type)
+                        if rdf_type not in source_data
+                        else rdf_type
+                    )
+                except ValueError as e:
+                    logger.warn(
+                        f"Ignorable while expanding property {rdf_type} on {field_path}"
+                    )
+                    logger.error(str(e))
+
                 if rdf_type not in source_data:
                     logger.warn(
                         f"Skipping field import {field_path} because {rdf_type} is not present in data"
