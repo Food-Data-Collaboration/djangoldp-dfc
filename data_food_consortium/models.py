@@ -12,6 +12,7 @@ class AbstractDFCModel(Model):
         help_text="The URL of the dataserver which provided the instance",
         blank=True,
         null=True,
+        rdf_type="dfc-t:dataServerSource",
     )
     # NOTE: In PostgreSQL, a high max_length like this won't have a performance impact,
     # 2000 is a practical limit for URLs.
@@ -144,6 +145,7 @@ class Enterprise(AbstractAgent):
         serializer_fields = [
             "@id",
             "proxy_of",
+            "data_server_source",
             "name",
             "email",
             "logo",
@@ -204,6 +206,8 @@ class EnterpriseAddress(AbstractAddress):
         rdf_type = "dfc-b:Address"
         serializer_fields = [
             "@id",
+            "proxy_of",
+            "data_server_source",
             "city",
             "country",
             "latitude",
@@ -241,7 +245,7 @@ class SocialMedia(AbstractDFCModel):
 
     class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:SocialMedia"
-        serializer_fields = ["@id", "name", "url"]
+        serializer_fields = ["@id", "proxy_of", "data_server_source", "name", "url"]
         container_path = "social_medias"
 
     def __str__(self):
@@ -249,8 +253,6 @@ class SocialMedia(AbstractDFCModel):
 
 
 class Person(AbstractAgent):
-    # TODO: a Person is affiliated to an Enterprise via an EnterpriseGroup, not directly?
-    # this contradicts the ontology
     affiliates = fields.ForeignKey(
         Enterprise,
         rdf_type="dfc-b:affiliates",
@@ -277,6 +279,8 @@ class Person(AbstractAgent):
         rdf_type = "dfc-b:Person"
         serializer_fields = [
             "@id",
+            "proxy_of",
+            "data_server_source",
             "first_name",
             "last_name",
             "email",
@@ -416,6 +420,7 @@ class SuppliedProduct(AbstractProduct):
         serializer_fields = [
             "@id",
             "proxy_of",
+            "data_server_source",
             "name",
             "description",
             "has_type",
@@ -459,7 +464,7 @@ class LocalizedProduct(AbstractDFCModel):
 
     class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:LocalizedProduct"
-        serializer_fields = ["@id", "reference_of"]
+        serializer_fields = ["@id", "proxy_of", "data_server_source", "reference_of"]
         disable_url = True  # Disables DjangoLDP auto-url generation
 
     def __str__(self):
@@ -507,6 +512,8 @@ class CatalogItem(AbstractDFCModel):
         rdf_type = "dfc-b:CatalogItem"
         serializer_fields = [
             "@id",
+            "proxy_of",
+            "data_server_source",
             "references",
             "extra_availability_time",
             "extra_delivery_condition",
@@ -539,7 +546,7 @@ class CustomerCategory(AbstractDFCModel):
 
     class Meta:
         rdf_type = "dfc-b:CustomerCategory"
-        serializer_fields = ["@id", "name", "offers"]
+        serializer_fields = ["@id", "proxy_of", "data_server_source", "name", "offers"]
         nested_fields = ["offers"]
         container_path = "customer_categories"
 
@@ -554,7 +561,13 @@ class Price(AbstractDFCModel):
 
     class Meta:
         rdf_type = "dfc-b:Price"
-        serializer_fields = ["@id", "value", "has_unit"]
+        serializer_fields = [
+            "@id",
+            "proxy_of",
+            "data_server_source",
+            "value",
+            "has_unit",
+        ]
 
     def __str__(self):
         return f"Price {self.value} ({self.has_unit})"
@@ -595,7 +608,7 @@ class Offer(AbstractDFCModel):
 
     class Meta:
         rdf_type = "dfc-b:Offer"
-        serializer_fields = ["@id", "offered_for"]
+        serializer_fields = ["@id", "proxy_of", "data_server_source", "offered_for"]
 
     def __str__(self):
         return f"Offer of {self.offers} to {self.offered_to} for {self.offered_for}"
@@ -618,7 +631,14 @@ class Service(AbstractDFCModel):
 
     class Meta:
         rdf_type = "cqcm:Service"
-        serializer_fields = ["@id", "created_at", "updated_at", "name"]
+        serializer_fields = [
+            "@id",
+            "proxy_of",
+            "data_server_source",
+            "created_at",
+            "updated_at",
+            "name",
+        ]
         nested_fields = ["suppliers"]
 
     def __str__(self):
@@ -647,7 +667,14 @@ class EnterpriseService(AbstractDFCModel):
 
     class Meta:
         rdf_type = "cqcm:EnterpriseService"
-        serializer_fields = ["@id", "created_at", "updated_at", "service"]
+        serializer_fields = [
+            "@id",
+            "proxy_of",
+            "data_server_source",
+            "created_at",
+            "updated_at",
+            "service",
+        ]
         container_path = "enterprise_services"
 
     def __str__(self):
@@ -659,6 +686,8 @@ class PhysicalPlaceAddress(AbstractAddress):
         rdf_type = "dfc-b:Address"
         serializer_fields = [
             "@id",
+            "proxy_of",
+            "data_server_source",
             "city",
             "country",
             "latitude",
@@ -705,7 +734,15 @@ class PhysicalPlace(AbstractDFCModel):
 
     class Meta:
         rdf_type = "dfc-b:PhysicalPlace"
-        serializer_fields = ["name", "address", "main_contact", "phone_number", "URL"]
+        serializer_fields = [
+            "proxy_of",
+            "data_server_source",
+            "name",
+            "address",
+            "main_contact",
+            "phone_number",
+            "URL",
+        ]
 
     def __str__(self):
         return self.name if self.name and len(self.name) else str(self.address)
@@ -750,6 +787,8 @@ class Coordination(AbstractDFCModel):
         rdf_type = "dfc-b:Coordination"
         serializer_fields = [
             "@id",
+            "proxy_of",
+            "data_server_source",
             "name",
             "margin_percent",
             "sale_sessions",
@@ -793,6 +832,8 @@ class SaleSession(AbstractDFCModel):
         rdf_type = "dfc-b:SaleSession"
         serializer_fields = [
             "@id",
+            "proxy_of",
+            "data_server_source",
             "start_date",
             "end_date",
             "quantity",
@@ -863,6 +904,8 @@ class ShippingOption(AbstractDFCModel):
         rdf_type = "dfc-b:ShippingOption"
         serializer_fields = [
             "@id",
+            "proxy_of",
+            "data_server_source",
             "has_type",
             "fee",
             "quantity",
