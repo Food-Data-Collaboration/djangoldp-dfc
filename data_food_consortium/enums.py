@@ -17,6 +17,11 @@ class ResourceImportSource(models.TextChoices):
     REFRESH_WEBHOOK = ("refresh_webhook", "Refresh webhook event")
 
 
+class WebhookEventSource(models.TextChoices):
+    ADMIN_SITE = ("admin_site", "Admin site")
+    DATASERVER = ("dataserver", "Received from dataserver")
+
+
 class ProductType(models.TextChoices):
     ALCOHOLIC_BEVERAGE = (
         "https://github.com/datafoodconsortium/taxonomies/releases/latest/download/productTypes.rdf#alcoholic-beverage",

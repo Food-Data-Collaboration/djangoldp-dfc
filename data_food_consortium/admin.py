@@ -3,8 +3,9 @@ from django.contrib import admin
 from djangoldp.admin import DjangoLDPAdmin
 
 from data_food_consortium import models
-from data_food_consortium.enums import ResourceImportSource
+from data_food_consortium.enums import ResourceImportSource, WebhookEventSource
 from data_food_consortium.proxy.resource import ProxyRefreshParser
+from data_food_consortium.proxy.webhook import WebhookProcessor
 
 
 class DFCModelAdmin(DjangoLDPAdmin):
@@ -187,3 +188,18 @@ class ResourceImportRecordAdmin(admin.ModelAdmin):
     list_filter = ["source"]
     readonly_fields = ["parsed_data"]
     actions = [retry_import]
+
+
+@admin.action(description="Retry webhook")
+def retry_webhook(modeladmin, request, queryset):
+    for record in queryset:
+        WebhookProcessor(record.platform_urlid, record.data).process(
+            WebhookEventSource.ADMIN_SITE
+        )
+
+
+@admin.register(models.RevokeWebhookRecord)
+class RevokeWebhookRecordAdmin(admin.ModelAdmin):
+    list_display = ["completed_at", "platform_urlid", "source"]
+    list_filter = ["source"]
+    actions = [retry_webhook]

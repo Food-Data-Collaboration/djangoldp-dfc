@@ -9,6 +9,7 @@ from data_food_consortium.enums import (
     ProductType,
     ResourceImportSource,
     ShippingOptionType,
+    WebhookEventSource,
 )
 
 
@@ -982,3 +983,23 @@ class ResourceImportRecord(models.Model):
             graph.parse(data=data_batch, format="json-ld")
             result.append(graph.serialize(format="json-ld"))
         return result
+
+
+class RevokeWebhookRecord(models.Model):
+    completed_at = models.DateTimeField(auto_now_add=True)
+    data = fields.JSONField(
+        blank=True, null=True, help_text="The JSON data sent with the webhook"
+    )
+    platform_urlid = fields.TextField(
+        blank=True, null=True, help_text="The platform which sent the webhook"
+    )
+    source = fields.CharField(
+        choices=WebhookEventSource.choices,
+        blank=True,
+        null=True,
+        max_length=64,
+        help_text="How the webhook was triggered",
+    )
+
+    def __str__(self):
+        return f"{self.platform_urlid} ({self.completed_at})"
