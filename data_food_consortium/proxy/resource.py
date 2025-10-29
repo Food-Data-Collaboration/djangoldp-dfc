@@ -97,7 +97,11 @@ class ProxyRefreshParser:
             # Parsing the graph into serializable data for our model
             resource_data = {
                 "@type": resolved_type_uri,
+                "data_server_source": self.data_server_source,
+                "proxy_of": str(subject),
+                "allow_create_backlink": False,
             }
+            source_data = {}
             for pred, obj in graph.predicate_objects(subject):
                 if pred == RDF_TYPE_PREDICATE:
                     continue
@@ -110,12 +114,12 @@ class ProxyRefreshParser:
                     value = str(obj)
                 else:
                     value = obj.toPython()
-                resource_data[str(pred)] = value
+                source_data[str(pred)] = value
 
                 # Create a copy so that we can tolerate compacted and expanded forms
                 # LDPSerializer will ignore non-mapped values later
                 try:
-                    resource_data[graph.qname(pred)] = value
+                    source_data[graph.qname(pred)] = value
                 except (ValueError, KeyError) as e:
                     logger.warn(
                         f"Unable to use compacted form of {pred}. RDFLib error: {e}"
@@ -153,7 +157,7 @@ class ProxyRefreshParser:
                 else:
                     rdf_type = field.rdf_type
 
-                if rdf_type not in resource_data:
+                if rdf_type not in source_data:
                     logger.warn(
                         f"Skipping field import {field_path} because {rdf_type} is not present in data"
                     )
@@ -172,22 +176,19 @@ class ProxyRefreshParser:
                         )
                         continue
 
-                    related_instance_urlid = resource_data.pop(rdf_type)
+                    related_instance_urlid = source_data.pop(rdf_type)
                     related_instance = field.related_model.objects.filter(
                         proxy_of=related_instance_urlid
                     ).first()
-                    existing_data = {}
 
                     if related_instance is None:
                         related_instance = field.related_model.objects.create(
                             proxy_of=related_instance_urlid
                         )
 
-                    resource_data[field.name] = {
-                        "@id": related_instance.urlid
-                    } | existing_data
+                    resource_data[field.name] = {"@id": related_instance.urlid}
                 else:
-                    resource_data[field.name] = resource_data.pop(rdf_type)
+                    resource_data[field.name] = source_data.pop(rdf_type)
 
                 # Workaround for lack of JSONField support in DjangoLDP.
                 if isinstance(field, fields.JSONField):
