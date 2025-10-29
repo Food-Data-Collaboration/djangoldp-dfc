@@ -186,7 +186,12 @@ class ProxyRefreshParser:
                             proxy_of=related_instance_urlid
                         )
 
-                    resource_data[field.name] = {"@id": related_instance.urlid}
+                    resource_data[field.name] = {
+                        "@id": related_instance.urlid,
+                        "data_server_source": self.data_server_source,
+                        "proxy_of": related_instance_urlid,
+                        "allow_create_backlink": False,
+                    }
                 else:
                     resource_data[field.name] = source_data.pop(rdf_type)
 
