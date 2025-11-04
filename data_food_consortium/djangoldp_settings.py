@@ -27,3 +27,5 @@ DFC_KEYCLOAK_MODEL_READ_SCOPES = {"dfc-b:Enterprise": "ReadEnterprise"}
 LDP_RDF_CONTEXT = "https://cdn.startinblox.com/owl/dfc.jsonld"
 
 MIDDLEWARE = ["data_food_consortium.middleware.DisbaleJWTMiddleware"]
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
