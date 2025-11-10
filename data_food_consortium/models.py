@@ -198,6 +198,12 @@ class Enterprise(AbstractAgent):
     # sells = models.TextField(blank=True, null=True) FK to model Order
     # transforms = models.TextField(blank=True, null=True) FK to model "as planned local transformation"
 
+    @classmethod
+    def serializer_class(cls):
+        from data_food_consortium.serializers import EnterpriseSerializer
+
+        return EnterpriseSerializer
+
 
 class EnterpriseAddress(AbstractAddress):
     address_of = fields.ForeignKey(
@@ -402,6 +408,12 @@ class AbstractProduct(AbstractDFCModel):
     class Meta:
         abstract = True
         rdf_type = "dfc-b:DefinedProduct"
+
+    @classmethod
+    def serializer_class(cls):
+        from data_food_consortium.serializers import ProductSerializer
+
+        return ProductSerializer
 
 
 class SuppliedProduct(AbstractProduct):

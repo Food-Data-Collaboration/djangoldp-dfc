@@ -52,6 +52,11 @@ class ProxyRefreshParser:
         self.data_batches.append(data)
 
     def get_serializer_class(self, model, depth=2, extra_fields=[]):
+        try:
+            serializer_class = model.serializer_class()
+        except AttributeError:
+            serializer_class = LDPSerializer
+
         # NOTE: LDPSerializer cannot be used without meta args:
         #   https://git.startinblox.com/djangoldp-packages/djangoldp/-/issues/277
         meta_args = {
@@ -61,8 +66,10 @@ class ProxyRefreshParser:
             "extra_fields": extra_fields,
         }
         meta_class = type("Meta", (), meta_args)
-        return type(LDPSerializer)(
-            "LDPSerializer", (LDPSerializer,), {"Meta": meta_class}
+        return type(serializer_class)(
+            serializer_class.__class__.__name__,
+            (serializer_class,),
+            {"Meta": meta_class},
         )
 
     def resolve_model_for_subject(self, graph, subject):
