@@ -186,7 +186,6 @@ def retry_import(modeladmin, request, queryset):
 class ResourceImportRecordAdmin(admin.ModelAdmin):
     list_display = ["import_started_at", "data_server_source", "source"]
     list_filter = ["source"]
-    readonly_fields = ["parsed_data"]
     actions = [retry_import]
 
 

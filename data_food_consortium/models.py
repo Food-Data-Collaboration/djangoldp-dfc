@@ -1,6 +1,5 @@
 from rdflib import Graph
 
-from django.contrib import admin
 from django.db import models
 from djangoldp import fields
 from djangoldp.models import Model
@@ -987,7 +986,6 @@ class ResourceImportRecord(models.Model):
         return f"{self.data_server_source} ({self.import_started_at})"
 
     @property
-    @admin.display(description="Parsed data batches")
     def parsed_data(self):
         result = []
         for data_batch in self.data_batches:
