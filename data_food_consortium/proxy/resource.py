@@ -1,6 +1,7 @@
 import logging
 import requests
 import urllib
+import uuid
 
 from django.conf import settings
 from django.db.models import Q
@@ -38,6 +39,30 @@ class ProxyRefreshParser:
     imported_subjects = None
     deleted_subjects = None
     data_batches = None
+
+    _dfc_v1_container_properties = [
+        "dfc-b:manages",
+        "dfc-b:supplies",
+        "dfc-b:hasAddress",
+        "dfc-b:hasSocialMedia",
+        "dfc-b:referencedBy",
+        "dfc-b:offeredThrough",
+        "dfc-b:affiliatedTo",
+        "dfc-b:hasReference",
+        "dfc-b:defines",
+        "dfc-b:offers",
+        "dfc-b:priceOf",
+        "dfc-b:mainContactOf",
+        "dfc-b:coordinatedBy",
+        "dfc-b:hasObject",
+        "dfc-b:hosts",
+        "cqcm:services",
+        "cqcm:suppliers",
+        "cqcm:shippingOptions",
+        "dfc-b:hasOption",
+        "dfc-b:deliveries",
+        "dfc-b:collections",
+    ]
 
     def __init__(self, data_server_source):
         dss = urllib.parse.urlparse(data_server_source)
@@ -100,7 +125,51 @@ class ProxyRefreshParser:
 
         return None, None
 
+    def reformat_list_to_container(self, key, jsonld_data):
+        if isinstance(jsonld_data, str):
+            container = [{"@id": jsonld_data}]
+        elif isinstance(jsonld_data, list):
+            container = [
+                {"@id": x} for x in jsonld_data if type(x) is not dict or "@id" not in x
+            ]
+        else:
+            logger.error(
+                f"Unexpected value for property {key} ({type(jsonld_data)}). {jsonld_data}"
+            )
+            return jsonld_data
+        return {
+            "@id": f"_:generated-container-{uuid.uuid4()}",
+            "@type": "ldp:Container",
+            "ldp:contains": container,
+        }
+
+    def transform_dfc_v1(self, jsonld_data):
+        """
+        DFC v1 does not require data-servers to send us their data in containers,
+        which causes problems with RDFLib's graph parser and DjangoLDP's serializer.
+        Our workaround is to transform the lists of string IDs we receive into proper
+        containers.
+
+        This is achieved with implicit knowledge of the DFC fields, and a recursive search of
+        the data received.
+        """
+        if isinstance(jsonld_data, list):
+            for i, ele in enumerate(jsonld_data):
+                jsonld_data[i] = self.transform_dfc_v1(ele)
+        elif isinstance(jsonld_data, dict):
+            for key in jsonld_data.keys():
+                if key in self._dfc_v1_container_properties:
+                    jsonld_data[key] = self.reformat_list_to_container(
+                        key, jsonld_data[key]
+                    )
+                else:
+                    jsonld_data[key] = self.transform_dfc_v1(jsonld_data[key])
+
+        return jsonld_data
+
     def parse(self, jsonld_data):
+        jsonld_data = self.transform_dfc_v1(jsonld_data)
+
         graph = Graph()
         graph.parse(data=jsonld_data, format="json-ld")
         subjects = set(graph.subjects())
