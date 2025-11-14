@@ -312,11 +312,10 @@ class ProxyRefreshParser:
                     serialize_fields_extra.append(field.name)
 
             # Use LDPSerializer with the resolved model to save it in our database.
-            logger.debug(f"\nCOMMITTING SAVE: {resource_data}")
-
             serializer_class = self.get_serializer_class(
                 resolved_model, 10, serialize_fields_extra
             )
+            resource_data["@id"] = instance.urlid
             serializer = serializer_class(instance, data=resource_data)
             serializer.is_valid(raise_exception=True)
             instance = serializer.save()
