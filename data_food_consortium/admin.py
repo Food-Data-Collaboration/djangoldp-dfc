@@ -16,7 +16,7 @@ class DFCModelAdmin(DjangoLDPAdmin):
 
 @admin.register(models.Enterprise)
 class EnterpriseAdmin(DFCModelAdmin):
-    search_fields = ["urlid", "proxy_of", "name"]
+    search_fields = ["urlid", "proxy_of", "name", "phone_number"]
 
 
 @admin.register(models.EnterpriseAddress)
