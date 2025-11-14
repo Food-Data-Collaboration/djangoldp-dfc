@@ -130,8 +130,12 @@ class ProxyRefreshParser:
             container = [{"@id": jsonld_data}]
         elif isinstance(jsonld_data, list):
             container = [
-                {"@id": x} for x in jsonld_data if type(x) is not dict or "@id" not in x
+                {"@id": x}
+                for x in jsonld_data
+                if type(x) is not dict or ("@id" not in x and "@context" not in x)
             ]
+        elif isinstance(jsonld_data, dict):
+            return jsonld_data
         else:
             logger.error(
                 f"Unexpected value for property {key} ({type(jsonld_data)}). {jsonld_data}"
