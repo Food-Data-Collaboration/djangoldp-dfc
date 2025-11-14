@@ -171,6 +171,26 @@ class ProxyRefreshParser:
 
         return jsonld_data
 
+    def _serialize_related_instance(self, field, instance, related_instance_urlid):
+        related_instance = field.related_model.objects.filter(
+            proxy_of=related_instance_urlid
+        ).first()
+
+        if related_instance is None:
+            related_instance = field.related_model.objects.create(
+                proxy_of=related_instance_urlid
+            )
+
+        if field.one_to_many or field.many_to_many:
+            getattr(instance, field.name).add(related_instance)
+
+        return {
+            "@id": related_instance.urlid,
+            "data_server_source": self.data_server_source,
+            "proxy_of": related_instance_urlid,
+            "allow_create_backlink": False,
+        }
+
     def parse(self, jsonld_data):
         jsonld_data = self.transform_dfc_v1(jsonld_data)
 
@@ -198,7 +218,21 @@ class ProxyRefreshParser:
                     continue
 
                 # Map RDF values to Python values.
-                if isinstance(obj, BNode):
+                # Containers, serialize strings directly to be reformatted later.
+                if (obj, URIRef("ldp:contains"), None) in graph:
+                    value = [str(v) for v in graph.objects(obj, URIRef("ldp:contains"))]
+                elif (
+                    obj,
+                    URIRef("http://www.w3.org/ns/ldp#contains"),
+                    None,
+                ) in graph:
+                    value = [
+                        str(v)
+                        for v in graph.objects(
+                            obj, URIRef("http://www.w3.org/ns/ldp#contains")
+                        )
+                    ]
+                elif isinstance(obj, BNode):
                     # Blank nodes serialized into JSON.
                     value = {p: o for p, o in graph.predicate_objects(obj)}
                 elif isinstance(obj, URIRef):
@@ -276,27 +310,19 @@ class ProxyRefreshParser:
                         )
                         continue
                     if field.one_to_many or field.many_to_many:
-                        logger.info(
-                            f"Many-to-many field expected to be imported later {field_path}"
+                        print(str(source_data[rdf_type]))
+                        print(str(rdf_type))
+                        resource_data[field.name] = {
+                            "@type": "ldp:Container",
+                            "ldp:contains": [
+                                self._serialize_related_instance(field, instance, x)
+                                for x in source_data.pop(rdf_type)
+                            ],
+                        }
+                    else:
+                        resource_data[field.name] = self._serialize_related_instance(
+                            field, instance, source_data.pop(rdf_type)
                         )
-                        continue
-
-                    related_instance_urlid = source_data.pop(rdf_type)
-                    related_instance = field.related_model.objects.filter(
-                        proxy_of=related_instance_urlid
-                    ).first()
-
-                    if related_instance is None:
-                        related_instance = field.related_model.objects.create(
-                            proxy_of=related_instance_urlid
-                        )
-
-                    resource_data[field.name] = {
-                        "@id": related_instance.urlid,
-                        "data_server_source": self.data_server_source,
-                        "proxy_of": related_instance_urlid,
-                        "allow_create_backlink": False,
-                    }
                 else:
                     resource_data[field.name] = source_data.pop(rdf_type)
 
