@@ -1,8 +1,15 @@
+from rdflib import Graph
+
 from django.db import models
 from djangoldp import fields
 from djangoldp.models import Model
 
-from data_food_consortium.enums import ProductType, ShippingOptionType
+from data_food_consortium.enums import (
+    ProductType,
+    ResourceImportSource,
+    ShippingOptionType,
+    WebhookEventSource,
+)
 
 
 class AbstractDFCModel(Model):
@@ -12,12 +19,9 @@ class AbstractDFCModel(Model):
         help_text="The URL of the dataserver which provided the instance",
         blank=True,
         null=True,
+        rdf_type="dfc-t:dataServerSource",
     )
-    # NOTE: In PostgreSQL, a high max_length like this won't have a performance impact,
-    # 2000 is a practical limit for URLs.
-    proxy_of = fields.LDPUrlField(
-        rdf_type="dfc-t:proxyOf", blank=True, null=True, max_length=2000
-    )
+    proxy_of = fields.TextField(rdf_type="dfc-t:proxyOf", blank=True, null=True)
 
     class Meta(Model.Meta):
         abstract = True
@@ -144,6 +148,7 @@ class Enterprise(AbstractAgent):
         serializer_fields = [
             "@id",
             "proxy_of",
+            "data_server_source",
             "name",
             "email",
             "logo",
@@ -188,6 +193,12 @@ class Enterprise(AbstractAgent):
     # sells = models.TextField(blank=True, null=True) FK to model Order
     # transforms = models.TextField(blank=True, null=True) FK to model "as planned local transformation"
 
+    @classmethod
+    def serializer_class(cls):
+        from data_food_consortium.serializers import EnterpriseSerializer
+
+        return EnterpriseSerializer
+
 
 class EnterpriseAddress(AbstractAddress):
     address_of = fields.ForeignKey(
@@ -204,6 +215,8 @@ class EnterpriseAddress(AbstractAddress):
         rdf_type = "dfc-b:Address"
         serializer_fields = [
             "@id",
+            "proxy_of",
+            "data_server_source",
             "city",
             "country",
             "latitude",
@@ -241,7 +254,7 @@ class SocialMedia(AbstractDFCModel):
 
     class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:SocialMedia"
-        serializer_fields = ["@id", "name", "url"]
+        serializer_fields = ["@id", "proxy_of", "data_server_source", "name", "url"]
         container_path = "social_medias"
 
     def __str__(self):
@@ -249,8 +262,6 @@ class SocialMedia(AbstractDFCModel):
 
 
 class Person(AbstractAgent):
-    # TODO: a Person is affiliated to an Enterprise via an EnterpriseGroup, not directly?
-    # this contradicts the ontology
     affiliates = fields.ForeignKey(
         Enterprise,
         rdf_type="dfc-b:affiliates",
@@ -277,6 +288,8 @@ class Person(AbstractAgent):
         rdf_type = "dfc-b:Person"
         serializer_fields = [
             "@id",
+            "proxy_of",
+            "data_server_source",
             "first_name",
             "last_name",
             "email",
@@ -391,6 +404,12 @@ class AbstractProduct(AbstractDFCModel):
         abstract = True
         rdf_type = "dfc-b:DefinedProduct"
 
+    @classmethod
+    def serializer_class(cls):
+        from data_food_consortium.serializers import ProductSerializer
+
+        return ProductSerializer
+
 
 class SuppliedProduct(AbstractProduct):
     """
@@ -416,6 +435,7 @@ class SuppliedProduct(AbstractProduct):
         serializer_fields = [
             "@id",
             "proxy_of",
+            "data_server_source",
             "name",
             "description",
             "has_type",
@@ -459,7 +479,7 @@ class LocalizedProduct(AbstractDFCModel):
 
     class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:LocalizedProduct"
-        serializer_fields = ["@id", "reference_of"]
+        serializer_fields = ["@id", "proxy_of", "data_server_source", "reference_of"]
         disable_url = True  # Disables DjangoLDP auto-url generation
 
     def __str__(self):
@@ -507,6 +527,8 @@ class CatalogItem(AbstractDFCModel):
         rdf_type = "dfc-b:CatalogItem"
         serializer_fields = [
             "@id",
+            "proxy_of",
+            "data_server_source",
             "references",
             "extra_availability_time",
             "extra_delivery_condition",
@@ -539,7 +561,7 @@ class CustomerCategory(AbstractDFCModel):
 
     class Meta:
         rdf_type = "dfc-b:CustomerCategory"
-        serializer_fields = ["@id", "name", "offers"]
+        serializer_fields = ["@id", "proxy_of", "data_server_source", "name", "offers"]
         nested_fields = ["offers"]
         container_path = "customer_categories"
 
@@ -554,7 +576,13 @@ class Price(AbstractDFCModel):
 
     class Meta:
         rdf_type = "dfc-b:Price"
-        serializer_fields = ["@id", "value", "has_unit"]
+        serializer_fields = [
+            "@id",
+            "proxy_of",
+            "data_server_source",
+            "value",
+            "has_unit",
+        ]
 
     def __str__(self):
         return f"Price {self.value} ({self.has_unit})"
@@ -595,7 +623,7 @@ class Offer(AbstractDFCModel):
 
     class Meta:
         rdf_type = "dfc-b:Offer"
-        serializer_fields = ["@id", "offered_for"]
+        serializer_fields = ["@id", "proxy_of", "data_server_source", "offered_for"]
 
     def __str__(self):
         return f"Offer of {self.offers} to {self.offered_to} for {self.offered_for}"
@@ -618,7 +646,14 @@ class Service(AbstractDFCModel):
 
     class Meta:
         rdf_type = "cqcm:Service"
-        serializer_fields = ["@id", "created_at", "updated_at", "name"]
+        serializer_fields = [
+            "@id",
+            "proxy_of",
+            "data_server_source",
+            "created_at",
+            "updated_at",
+            "name",
+        ]
         nested_fields = ["suppliers"]
 
     def __str__(self):
@@ -647,7 +682,14 @@ class EnterpriseService(AbstractDFCModel):
 
     class Meta:
         rdf_type = "cqcm:EnterpriseService"
-        serializer_fields = ["@id", "created_at", "updated_at", "service"]
+        serializer_fields = [
+            "@id",
+            "proxy_of",
+            "data_server_source",
+            "created_at",
+            "updated_at",
+            "service",
+        ]
         container_path = "enterprise_services"
 
     def __str__(self):
@@ -659,6 +701,8 @@ class PhysicalPlaceAddress(AbstractAddress):
         rdf_type = "dfc-b:Address"
         serializer_fields = [
             "@id",
+            "proxy_of",
+            "data_server_source",
             "city",
             "country",
             "latitude",
@@ -705,7 +749,15 @@ class PhysicalPlace(AbstractDFCModel):
 
     class Meta:
         rdf_type = "dfc-b:PhysicalPlace"
-        serializer_fields = ["name", "address", "main_contact", "phone_number", "URL"]
+        serializer_fields = [
+            "proxy_of",
+            "data_server_source",
+            "name",
+            "address",
+            "main_contact",
+            "phone_number",
+            "URL",
+        ]
 
     def __str__(self):
         return self.name if self.name and len(self.name) else str(self.address)
@@ -750,6 +802,8 @@ class Coordination(AbstractDFCModel):
         rdf_type = "dfc-b:Coordination"
         serializer_fields = [
             "@id",
+            "proxy_of",
+            "data_server_source",
             "name",
             "margin_percent",
             "sale_sessions",
@@ -793,6 +847,8 @@ class SaleSession(AbstractDFCModel):
         rdf_type = "dfc-b:SaleSession"
         serializer_fields = [
             "@id",
+            "proxy_of",
+            "data_server_source",
             "start_date",
             "end_date",
             "quantity",
@@ -863,6 +919,8 @@ class ShippingOption(AbstractDFCModel):
         rdf_type = "dfc-b:ShippingOption"
         serializer_fields = [
             "@id",
+            "proxy_of",
+            "data_server_source",
             "has_type",
             "fee",
             "quantity",
@@ -883,3 +941,71 @@ class ShippingOption(AbstractDFCModel):
         ):
             self.enterprise = self.sale_session.coordination.enterprise
         return super().save(*args, **kwargs)
+
+
+class ResourceImportRecord(models.Model):
+    """
+    A report corresponding to an import of data onto this proxy (e.g. via webhook or import command)
+    Only stored if these reports are configured in settings.
+    """
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    import_started_at = models.DateTimeField()
+    data_batches = fields.JSONField(
+        blank=True,
+        null=True,
+        help_text="A list of the JSON data received from the data-server, received in batches",
+    )
+    data_server_source = fields.TextField(blank=True, null=True)
+    imported_models = fields.TextField(
+        blank=True,
+        null=True,
+        help_text="The models which were imported based on the webhook data",
+    )
+    imported_subjects = fields.TextField(
+        blank=True, null=True, help_text="The instances found in the data"
+    )
+    deleted_subjects = fields.TextField(
+        blank=True,
+        null=True,
+        help_text="Instances which were discarded as a result of the import, e.g. if permission was removed",
+    )
+    source = fields.CharField(
+        choices=ResourceImportSource.choices,
+        blank=True,
+        null=True,
+        max_length=64,
+        help_text="How the import was triggered (e.g. via the command line or webhook)",
+    )
+
+    def __str__(self):
+        return f"{self.data_server_source} ({self.import_started_at})"
+
+    @property
+    def parsed_data(self):
+        result = []
+        for data_batch in self.data_batches:
+            graph = Graph()
+            graph.parse(data=data_batch, format="json-ld")
+            result.append(graph.serialize(format="json-ld"))
+        return result
+
+
+class RevokeWebhookRecord(models.Model):
+    completed_at = models.DateTimeField(auto_now_add=True)
+    data = fields.JSONField(
+        blank=True, null=True, help_text="The JSON data sent with the webhook"
+    )
+    platform_urlid = fields.TextField(
+        blank=True, null=True, help_text="The platform which sent the webhook"
+    )
+    source = fields.CharField(
+        choices=WebhookEventSource.choices,
+        blank=True,
+        null=True,
+        max_length=64,
+        help_text="How the webhook was triggered",
+    )
+
+    def __str__(self):
+        return f"{self.platform_urlid} ({self.completed_at})"

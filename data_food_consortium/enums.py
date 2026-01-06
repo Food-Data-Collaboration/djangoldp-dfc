@@ -6,8 +6,20 @@ DFC_PT_URL = "https://raw.githubusercontent.com/datafoodconsortium/taxonomies/re
 
 
 class ShippingOptionType(models.TextChoices):
-    PICKUP = (f"{DFC_B_URL}#PickupOption","Pick-up")
-    DELIVERY = (f"{DFC_B_URL}#DeliveryOption","Delivery")
+    PICKUP = (f"{DFC_B_URL}#PickupOption", "Pick-up")
+    DELIVERY = (f"{DFC_B_URL}#DeliveryOption", "Delivery")
+
+
+class ResourceImportSource(models.TextChoices):
+    ADMIN_SITE = ("admin_site", "Admin site")
+    COMMAND_LINE = ("command_line", "Command line")
+    UPDATE_WEBHOOK = ("update_webhook", "Update webhook event")
+    REFRESH_WEBHOOK = ("refresh_webhook", "Refresh webhook event")
+
+
+class WebhookEventSource(models.TextChoices):
+    ADMIN_SITE = ("admin_site", "Admin site")
+    DATASERVER = ("dataserver", "Received from dataserver")
 
 
 class ProductType(models.TextChoices):

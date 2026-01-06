@@ -1,11 +1,15 @@
+from django.conf import settings
 from django.contrib import admin
 from djangoldp.admin import DjangoLDPAdmin
 
 from data_food_consortium import models
+from data_food_consortium.enums import ResourceImportSource, WebhookEventSource
+from data_food_consortium.proxy.resource import ProxyRefreshParser
+from data_food_consortium.proxy.webhook import WebhookProcessor
 
 
 class DFCModelAdmin(DjangoLDPAdmin):
-    list_display = ["urlid", "proxy_of", "updated_at"]
+    list_display = ["urlid", "proxy_of", "data_server_source", "updated_at"]
     search_fields = ["urlid", "proxy_of"]
     readonly_fields = ["created_at", "updated_at"]
 
@@ -87,7 +91,14 @@ class SuppliedProductAdmin(DFCModelAdmin):
         "supplied_by__urlid",
         "supplied_by__proxy_of",
     ]
-    list_display = ["urlid", "proxy_of", "name", "has_type", "supplied_by"]
+    list_display = [
+        "urlid",
+        "proxy_of",
+        "data_server_source",
+        "name",
+        "has_type",
+        "supplied_by",
+    ]
 
 
 @admin.register(models.CatalogItem)
@@ -102,7 +113,13 @@ class CatalogItemAdmin(DFCModelAdmin):
         "references__urlid",
         "references__proxy_of",
     ]
-    list_display = ["urlid", "proxy_of", "managed_by", "references"]
+    list_display = [
+        "urlid",
+        "proxy_of",
+        "data_server_source",
+        "managed_by",
+        "references",
+    ]
     raw_id_display = ["managed_by", "references"]
 
 
@@ -152,3 +169,36 @@ class ShippingOptionAdmin(DFCModelAdmin):
     list_display = ["urlid", "sale_session", "has_type"]
     list_filter = ["has_type"]
     raw_id_fields = ["sale_session", "picked_up_at", "delivers_at"]
+
+
+@admin.action(description="Retry import")
+def retry_import(modeladmin, request, queryset):
+    for record in queryset:
+        for data_batch in record.data_batches:
+            parser = ProxyRefreshParser(record.data_server_source)
+            parser.parse(data_batch)
+            parser.clean_up()
+            if settings.DFC_STORE_IMPORT_REPORTS:
+                parser.create_record(ResourceImportSource.ADMIN_SITE)
+
+
+@admin.register(models.ResourceImportRecord)
+class ResourceImportRecordAdmin(admin.ModelAdmin):
+    list_display = ["import_started_at", "data_server_source", "source"]
+    list_filter = ["source"]
+    actions = [retry_import]
+
+
+@admin.action(description="Retry webhook")
+def retry_webhook(modeladmin, request, queryset):
+    for record in queryset:
+        WebhookProcessor(record.platform_urlid, record.data).process(
+            WebhookEventSource.ADMIN_SITE
+        )
+
+
+@admin.register(models.RevokeWebhookRecord)
+class RevokeWebhookRecordAdmin(admin.ModelAdmin):
+    list_display = ["completed_at", "platform_urlid", "source"]
+    list_filter = ["source"]
+    actions = [retry_webhook]

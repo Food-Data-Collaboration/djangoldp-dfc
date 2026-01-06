@@ -1,7 +1,5 @@
 import logging
 import validators
-from enum import StrEnum
-from urllib.parse import urlparse
 
 from django.conf import settings
 from django.shortcuts import render
@@ -9,7 +7,6 @@ from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from djangoldp.filters import SearchByQueryParamFilterBackend
-from djangoldp.models import Model
 from djangoldp.views.ldp_viewset import LDPViewSet
 from djangoldp.views.webid import InstanceWebIDView
 from djangoldp_csv.errors import FieldParsingError
@@ -17,16 +14,10 @@ from djangoldp_csv.views import BaseCSVImportView
 
 from data_food_consortium.forms import EnterpriseImportForm
 from data_food_consortium.proxy.keycloak import KeycloakResourceServerAuthentication
-from data_food_consortium.proxy.resource import ProxyRefreshParser, ResourceServerClient
+from data_food_consortium.proxy.webhook import WebhookEventType, WebhookProcessor
 
 
 logger = logging.getLogger("djangoldp")
-
-
-class WebhookEventType(StrEnum):
-    UPDATE = "update"
-    REFRESH = "refresh"
-    REVOKE = "revoke"
 
 
 class CacheWebhookView(APIView):
@@ -35,22 +26,6 @@ class CacheWebhookView(APIView):
     """
 
     authentication_classes = [KeycloakResourceServerAuthentication]
-
-    def process(self, request, data):
-        if data["eventType"] == WebhookEventType.UPDATE:
-            # Parse and import the graph.
-            # TODO: trigger optional behaviour in the parser to fail loudly.
-            ProxyRefreshParser(data["@id"]).parse(data)
-        elif data["eventType"] == WebhookEventType.REFRESH:
-            host = urlparse(request.platform_urlid)
-            ResourceServerClient(f"{host.scheme}://{host.netloc}/").request_scope(
-                data["scope"]
-            )
-        elif data["eventType"] == WebhookEventType.REVOKE:
-            for obj in data["objects"]:
-                Model.get_subclass_with_rdf_type(obj["@type"]).objects.filter(
-                    proxy_of=obj["@id"]
-                ).delete()
 
     def post(self, request, *args, **kwargs):
         data = request.data
@@ -87,7 +62,7 @@ class CacheWebhookView(APIView):
                         status=400,
                     )
 
-        self.process(request, data)
+        WebhookProcessor(request.platform_urlid, data).process()
         return Response({}, status=200)
 
 
