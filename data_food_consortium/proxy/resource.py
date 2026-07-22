@@ -39,6 +39,7 @@ class ProxyRefreshParser:
     imported_subjects = None
     deleted_subjects = None
     data_batches = None
+    unknown_model_types = None
 
     _dfc_v1_container_properties = [
         "dfc-b:manages",
@@ -72,6 +73,7 @@ class ProxyRefreshParser:
         self.imported_subjects = list()
         self.deleted_subjects = list()
         self.data_batches = list()
+        self.unknown_model_types = set()
 
     def _cache_data_batch(self, data):
         self.data_batches.append(data)
@@ -114,14 +116,22 @@ class ProxyRefreshParser:
                 return resolved_model, type_uri
 
         # Unable to resolve model, log error if necessary.
-        if set(model_types) != {
-            "http://www.w3.org/ns/ldp#Container",
-            "ldp:Container",
-        }:
+        if len(
+            set(model_types).difference(
+                {
+                    "http://www.w3.org/ns/ldp#Container",
+                    "ldp:Container",
+                    "ns1:Container",
+                    "ns2:Container",
+                    *self.unknown_model_types,
+                }
+            )
+        ):
             logger.warn(
                 f"Unable to resolve a model with configured type_uri {model_types}."
                 "If this is a container or a sequence, it is not a problem."
             )
+            self.unknown_model_types = self.unknown_model_types.union(set(model_types))
 
         return None, None
 
@@ -276,7 +286,7 @@ class ProxyRefreshParser:
                     rdf_type = field.remote_field.related_rdf_type
                 # Otherwise the field must have an RDF type configured to be considered
                 elif not hasattr(field, "rdf_type") or field.rdf_type is None:
-                    logger.warn(
+                    logger.debug(
                         f"Skipping field import {field_path} because it lacks rdf_type"
                     )
                     continue
@@ -291,13 +301,13 @@ class ProxyRefreshParser:
                         else rdf_type
                     )
                 except ValueError as e:
-                    logger.warn(
+                    logger.debug(
                         f"Ignorable while expanding property {rdf_type} on {field_path}"
                     )
                     logger.error(str(e))
 
                 if rdf_type not in source_data:
-                    logger.warn(
+                    logger.debug(
                         f"Skipping field import {field_path} because {rdf_type} is not present in data"
                     )
                     continue
@@ -305,13 +315,11 @@ class ProxyRefreshParser:
                 # Foreign Keys
                 if field.related_model is not None:
                     if field.related_model._meta.abstract:
-                        logger.warn(
+                        logger.debug(
                             f"Skipping field import {field_path} because the related model ({field.related_model}) is abstract"
                         )
                         continue
                     if field.one_to_many or field.many_to_many:
-                        print(str(source_data[rdf_type]))
-                        print(str(rdf_type))
                         resource_data[field.name] = {
                             "@type": "ldp:Container",
                             "ldp:contains": [
@@ -343,7 +351,15 @@ class ProxyRefreshParser:
             )
             resource_data["@id"] = instance.urlid
             serializer = serializer_class(instance, data=resource_data)
-            serializer.is_valid(raise_exception=True)
+            if not serializer.is_valid():
+                for err in serializer.errors.keys():
+                    resource_data.pop(err)
+                logger.warn(
+                    f"Received invalid data, errors are as follows: {serializer.errors}. "
+                    f"Resource: {resource_data['proxy_of']}. Handling by omitting erroneous fields..."
+                )
+                serializer = serializer_class(instance, data=resource_data)
+                serializer.is_valid(raise_exception=True)
             instance = serializer.save()
 
             # Workaround for lack of JSONField support in DjangoLDP.

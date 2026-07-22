@@ -1,4 +1,5 @@
 from django.template.defaultfilters import striptags
+from rest_framework import serializers
 
 from djangoldp.serializers import LDPSerializer
 from rest_framework import fields
@@ -22,3 +23,6 @@ class ProductSerializer(LDPSerializer):
     description = StrippedHTMLCharField(
         allow_blank=True, allow_null=True, required=False
     )
+    has_type = serializers.CharField(
+        required=False
+    )  # Not required to be a known ProductType.

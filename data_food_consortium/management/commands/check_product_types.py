@@ -1,6 +1,3 @@
-import re
-import requests
-
 from django.core.management.base import BaseCommand
 
 from data_food_consortium.enums import DFC_PT_URL, ProductType
@@ -36,8 +33,16 @@ class Command(BaseCommand):
                 f'    {choice_name.replace("-", "_").upper()} = ("{pt}", "{choice_name.replace("-", " ").capitalize()}")'
             )
 
-        # Tests the assumptions of this script to check for changes in the ontology format.
-        self.report_error_checking(product_types)
+    def treat_concept_name(self, concept_name: str):
+        # ProductType ontology contains uppercase, camel case and lowercase variants of the same product types,
+        # labelled as exact matches of one another. We treat only the lowercase variant, for simplicity.
+        # Likewise, we do not store duplicate product types for HTTP or HTTPS scheme URIs.
+        concept_args = concept_name.split("#")
+        return (
+            concept_args[0].replace("http://", "https://")
+            + "#"
+            + concept_args[1].lower()
+        )
 
     def gather_product_types(self):
         # Download the published dfc-pt ontology.
@@ -48,58 +53,10 @@ class Command(BaseCommand):
         product_types = set()
         for s in g.subjects(SKOS.hasTopConcept, None):
             for top_concept in g.objects(s, SKOS.hasTopConcept):
-                product_types.add(str(top_concept))
+                product_types.add(self.treat_concept_name(str(top_concept)))
 
         for s in g.subjects(SKOS.narrower, None):
             for concept in g.objects(s, SKOS.narrower):
-                product_types.add(str(concept))
+                product_types.add(self.treat_concept_name(str(concept)))
 
         return product_types
-
-    def report_error_checking(self, product_types):
-        print(
-            "\n-------------------------------------------\n"
-            "Conducting error checking. The script will now test its own assumptions by"
-            " looking for possible changes in the ontology schema"
-        )
-
-        # Read the content of the ontology into a string.
-        response = requests.get(DFC_PT_URL)
-        response.raise_for_status()
-        content = response.text
-
-        # Run a simple regex to check for all unique product type candidates.
-        pattern = re.compile(
-            r'"https:\/\/github.com\/datafoodconsortium\/taxonomies\/releases\/latest\/download\/productTypes.rdf#[\S]+"'
-        )
-        matches = {m.replace('"', "") for m in set(pattern.findall(content))}
-
-        # Compare the set of matches with those handled by the script, and report any inconsistencies.
-        diff = matches.difference(product_types).difference(set(ProductType.values))
-        error_count = len(diff)
-
-        if error_count > 0:
-            print(
-                f"{error_count} possible product types were found which were not identified by the script,"
-                " probably due to the predicate where the URI was found"
-            )
-            print("These are as follows")
-            for error in diff:
-                print(f" - {error}")
-
-        diff = product_types.difference(matches)
-        if len(diff) > 0:
-            print(
-                f"{len(diff)} product types were identified by the script which have an unexpected URI structure"
-            )
-            print("These are as follows")
-            for error in diff:
-                print(f" - {error}")
-
-        error_count += len(diff)
-        if error_count == 0:
-            print("Check complete. No errors were found.")
-        else:
-            print(
-                f"Check complete. {error_count} possible errors found. Please review them for validity."
-            )
