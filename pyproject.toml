@@ -1,0 +1,4 @@
+[tool.ruff.lint.per-file-ignores]
+"data_food_consortium/admin.py" = ["RUF012"]
+"data_food_consortium/models.py" = ["RUF012"]
+"data_food_consortium/views.py" = ["RUF012"]

@@ -1,8 +1,7 @@
-from rdflib import Graph
-
 from django.db import models
 from djangoldp import fields
 from djangoldp.models import Model
+from rdflib import Graph
 
 from data_food_consortium.enums import (
     ProductType,
@@ -456,8 +455,6 @@ class SuppliedProductGroup(SuppliedProduct):
     """
     Is-a SuppliedProduct, but stored and retrieved separately due to being intended as a collection of SuppliedProducts.
     """
-
-    pass
 
 
 class LocalizedProduct(AbstractDFCModel):

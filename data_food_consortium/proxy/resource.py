@@ -1,17 +1,16 @@
 import logging
-import requests
 import urllib
 import uuid
 
+import requests
 from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
-from rdflib import BNode, Graph, URIRef
-from rdflib.exceptions import ParserError
-
 from djangoldp import fields
 from djangoldp.models import Model
 from djangoldp.serializers import LDPSerializer
+from rdflib import BNode, Graph, URIRef
+from rdflib.exceptions import ParserError
 
 from data_food_consortium.enums import ResourceImportSource
 from data_food_consortium.models import ResourceImportRecord
@@ -19,7 +18,6 @@ from data_food_consortium.proxy.keycloak import (
     KeycloakAuthenticationException,
     KeycloakClient,
 )
-
 
 RDF_TYPE_PREDICATE = URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
 SCOPES_BASE_URI = "https://github.com/datafoodconsortium/taxonomies/releases/latest/download/scopes.rdf#"
@@ -41,7 +39,7 @@ class ProxyRefreshParser:
     data_batches = None
     unknown_model_types = None
 
-    _dfc_v1_container_properties = [
+    _dfc_v1_container_properties = [  # noqa: RUF012
         "dfc-b:manages",
         "dfc-b:supplies",
         "dfc-b:hasAddress",
@@ -70,15 +68,17 @@ class ProxyRefreshParser:
         self.data_server_source = f"{dss.scheme}://{dss.netloc}"
         self.import_started_at = timezone.now()
         self.imported_models = set()
-        self.imported_subjects = list()
-        self.deleted_subjects = list()
-        self.data_batches = list()
+        self.imported_subjects = []
+        self.deleted_subjects = []
+        self.data_batches = []
         self.unknown_model_types = set()
 
     def _cache_data_batch(self, data):
         self.data_batches.append(data)
 
-    def get_serializer_class(self, model, depth=2, extra_fields=[]):
+    def get_serializer_class(self, model, depth=2, extra_fields=None):
+        if extra_fields is None:
+            extra_fields = []
         try:
             serializer_class = model.serializer_class()
         except AttributeError:
@@ -106,7 +106,7 @@ class ProxyRefreshParser:
             try:
                 model_types += [str(type_uri), graph.qname(type_uri)]
             except (ValueError, KeyError) as e:
-                logger.warn(
+                logger.warning(
                     f"Unable to use compacted form of {type_uri}. RDFLib error: {e}"
                 )
 
@@ -127,7 +127,7 @@ class ProxyRefreshParser:
                 }
             )
         ):
-            logger.warn(
+            logger.warning(
                 f"Unable to resolve a model with configured type_uri {model_types}."
                 "If this is a container or a sequence, it is not a problem."
             )
@@ -171,7 +171,7 @@ class ProxyRefreshParser:
             for i, ele in enumerate(jsonld_data):
                 jsonld_data[i] = self.transform_dfc_v1(ele)
         elif isinstance(jsonld_data, dict):
-            for key in jsonld_data.keys():
+            for key in jsonld_data:
                 if key in self._dfc_v1_container_properties:
                     jsonld_data[key] = self.reformat_list_to_container(
                         key, jsonld_data[key]
@@ -256,7 +256,7 @@ class ProxyRefreshParser:
                 try:
                     source_data[graph.qname(pred)] = value
                 except (ValueError, KeyError) as e:
-                    logger.warn(
+                    logger.warning(
                         f"Unable to use compacted form of {pred}. RDFLib error: {e}"
                     )
 
@@ -352,9 +352,9 @@ class ProxyRefreshParser:
             resource_data["@id"] = instance.urlid
             serializer = serializer_class(instance, data=resource_data)
             if not serializer.is_valid():
-                for err in serializer.errors.keys():
+                for err in serializer.errors:
                     resource_data.pop(err)
-                logger.warn(
+                logger.warning(
                     f"Received invalid data, errors are as follows: {serializer.errors}. "
                     f"Resource: {resource_data['proxy_of']}. Handling by omitting erroneous fields..."
                 )
@@ -364,8 +364,8 @@ class ProxyRefreshParser:
 
             # Workaround for lack of JSONField support in DjangoLDP.
             if len(json_fields):
-                for field_name in json_fields:
-                    setattr(instance, field_name, json_fields[field_name])
+                for field_name, value in json_fields.items():
+                    setattr(instance, field_name, value)
                 instance.save()
 
         logger.info(f"Finished importing {len(self.imported_subjects)} subjects")
@@ -433,14 +433,13 @@ class ResourceServerClient:
                 key = f"{SCOPES_BASE_URI}{scope}"
                 if key in data_server_endpoints:
                     val = data_server_endpoints[key]
-                    if val.startswith("/"):
-                        val = val[1:]
+                    val = val.removeprefix("/")
                     self.scope_config[scope] = val
             logger.debug(
                 f"Configured ResourceServerClient with discovered config {self.scope_config}"
             )
         else:
-            logger.warn(
+            logger.warning(
                 "Configured ResourceServerClient with default config, "
                 f"discovery endpoint {discovery_endpoint} responded {response.status_code}"
             )

@@ -2,7 +2,6 @@ from enum import StrEnum
 from urllib.parse import urlparse
 
 from django.conf import settings
-
 from djangoldp.models import Model
 
 from data_food_consortium.enums import ResourceImportSource, WebhookEventSource

@@ -1,11 +1,12 @@
 from django.urls import path
+
 from .models import Enterprise, Person, SuppliedProduct
 from .views import (
     CacheWebhookView,
-    EnterpriseViewset,
     EnterpriseImportView,
-    ProxyWebIDView,
+    EnterpriseViewset,
     PersonViewset,
+    ProxyWebIDView,
     SuppliedProductViewset,
 )
 

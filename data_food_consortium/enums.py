@@ -1,6 +1,5 @@
 from django.db import models
 
-
 DFC_B_URL = "https://raw.githubusercontent.com/datafoodconsortium/ontology/refs/heads/master/src/DFC_BusinessOntology.owl"
 DFC_PT_URL = "http://w3id.org/dfc/taxonomies/productTypes.rdf"
 

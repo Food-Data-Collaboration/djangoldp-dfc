@@ -1,8 +1,6 @@
 from django.template.defaultfilters import striptags
-from rest_framework import serializers
-
 from djangoldp.serializers import LDPSerializer
-from rest_framework import fields
+from rest_framework import fields, serializers
 
 
 class StrippedHTMLCharField(fields.CharField):

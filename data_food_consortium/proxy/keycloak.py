@@ -1,9 +1,8 @@
 import os
-import requests
 
+import requests
 from authlib.jose import jwt as authlib_jwt
 from authlib.jose.errors import JoseError
-
 from django.conf import settings
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
@@ -85,5 +84,3 @@ class KeycloakResourceServerAuthentication(BaseAuthentication):
             request.platform_urlid = claims["client_id"]
         except JoseError:
             raise AuthenticationFailed("Invalid token")
-
-        return None
