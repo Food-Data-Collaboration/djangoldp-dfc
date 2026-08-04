@@ -14,6 +14,7 @@ from rdflib.exceptions import ParserError
 
 from data_food_consortium.enums import ResourceImportSource
 from data_food_consortium.models import ResourceImportRecord
+from data_food_consortium.models_common import DataServer
 from data_food_consortium.proxy.keycloak import (
     KeycloakAuthenticationException,
     KeycloakClient,
@@ -31,7 +32,7 @@ class ProxyRefreshParser:
     Responsible for parsing an RDF-graph containing data to be proxied by a DjangoLDP application.
     """
 
-    data_server_source = ""
+    data_server_source = None
     import_started_at = None
     imported_models = None
     imported_subjects = None
@@ -65,7 +66,7 @@ class ProxyRefreshParser:
 
     def __init__(self, data_server_source):
         dss = urllib.parse.urlparse(data_server_source)
-        self.data_server_source = f"{dss.scheme}://{dss.netloc}"
+        self.data_server_source = {"urlid": f"{dss.scheme}://{dss.netloc}"}
         self.import_started_at = timezone.now()
         self.imported_models = set()
         self.imported_subjects = []
@@ -265,10 +266,11 @@ class ProxyRefreshParser:
             if instance is None:
                 # Must set urlid before
                 instance = resolved_model.objects.create(
-                    proxy_of=str(subject),
-                    data_server_source=self.data_server_source,
-                    allow_create_backlink=False,
+                    proxy_of=str(subject), allow_create_backlink=False
                 )
+            instance.data_server_source = Model.get_or_create(
+                DataServer, self.data_server_source["urlid"]
+            )
             self.imported_models.add(resolved_model)
             self.imported_subjects.append(instance.proxy_of)
 
@@ -382,11 +384,11 @@ class ProxyRefreshParser:
         This method finds and deletes those objects.
         """
         ldp_serializer_created = Q(
-            urlid__startswith=self.data_server_source, proxy_of__isnull=True
+            urlid__startswith=self.data_server_source["urlid"], proxy_of__isnull=True
         )
         missing_from_new_import = Q(
             updated_at__lt=self.import_started_at,
-            data_server_source__startswith=self.data_server_source,
+            data_server_source__urlid__startswith=self.data_server_source["urlid"],
         )
 
         for imported_model in self.imported_models:
@@ -396,15 +398,18 @@ class ProxyRefreshParser:
             self.deleted_subjects += [d.proxy_of for d in deleted]
             deleted.delete()
             logger.info(
-                f"Deleted {deleted} instances of {imported_model} during cleanup on data source {self.data_server_source}"
+                f"Deleted {deleted} instances of {imported_model} during cleanup on data source {self.data_server_source['urlid']}"
             )
 
     def create_record(self, source: ResourceImportSource):
         self.imported_subjects.sort()
+        data_server_source = Model.get_or_create(
+            DataServer, self.data_server_source["urlid"]
+        )
         ResourceImportRecord.objects.create(
             import_started_at=self.import_started_at,
             data_batches=self.data_batches,
-            data_server_source=self.data_server_source,
+            data_server_source=data_server_source,
             imported_models="\n".join([str(m) for m in self.imported_models]),
             imported_subjects="\n".join(self.imported_subjects),
             deleted_subjects="\n".join(self.deleted_subjects),

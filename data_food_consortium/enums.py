@@ -2,6 +2,16 @@ from django.db import models
 
 DFC_B_URL = "https://raw.githubusercontent.com/datafoodconsortium/ontology/refs/heads/master/src/DFC_BusinessOntology.owl"
 DFC_PT_URL = "http://w3id.org/dfc/taxonomies/productTypes.rdf"
+DFC_SCOPES_BASE_URI = "https://github.com/datafoodconsortium/taxonomies/releases/latest/download/scopes.rdf"
+
+
+class PermissioningScope(models.TextChoices):
+    READ_PRODUCTS = (f"{DFC_SCOPES_BASE_URI}#ReadProducts", "ReadProducts")
+    WRITE_PRODUCTS = (f"{DFC_SCOPES_BASE_URI}#WriteProducts", "WriteProducts")
+    READ_ORDERS = (f"{DFC_SCOPES_BASE_URI}#ReadOrders", "ReadOrders")
+    WRITE_ORDERS = (f"{DFC_SCOPES_BASE_URI}#WriteOrders", "WriteOrders")
+    READ_ENTERPRISE = (f"{DFC_SCOPES_BASE_URI}#ReadEnterprise", "ReadEnterprise")
+    WRITE_ENTERPRISE = (f"{DFC_SCOPES_BASE_URI}#WriteEnterprise", "WriteEnterprise")
 
 
 class ShippingOptionType(models.TextChoices):

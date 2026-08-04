@@ -9,13 +9,16 @@ from data_food_consortium.enums import (
     ShippingOptionType,
     WebhookEventSource,
 )
+from data_food_consortium.models_common import DataServer
 
 
 class AbstractDFCModel(Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    data_server_source = fields.TextField(
-        help_text="The URL of the dataserver which provided the instance",
+    data_server_source = fields.ForeignKey(
+        DataServer,
+        on_delete=models.RESTRICT,
+        help_text="The dataserver which provided the instance",
         blank=True,
         null=True,
         rdf_type="dfc-t:dataServerSource",
