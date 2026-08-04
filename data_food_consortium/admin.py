@@ -9,7 +9,8 @@ from data_food_consortium.proxy.webhook import WebhookProcessor
 
 
 class DFCModelAdmin(DjangoLDPAdmin):
-    list_display = ["urlid", "proxy_of", "data_server_source", "updated_at"]
+    list_display = ["urlid", "proxy_of", "updated_at"]
+    list_filter = ["data_server_source"]
     search_fields = ["urlid", "proxy_of"]
     readonly_fields = ["created_at", "updated_at"]
 
@@ -94,11 +95,11 @@ class SuppliedProductAdmin(DFCModelAdmin):
     list_display = [
         "urlid",
         "proxy_of",
-        "data_server_source",
         "name",
         "has_type",
         "supplied_by",
     ]
+    list_filter = ["data_server_source"]
 
 
 @admin.register(models.CatalogItem)
@@ -116,10 +117,10 @@ class CatalogItemAdmin(DFCModelAdmin):
     list_display = [
         "urlid",
         "proxy_of",
-        "data_server_source",
         "managed_by",
         "references",
     ]
+    list_filter = ["data_server_source"]
     raw_id_display = ["managed_by", "references"]
 
 
@@ -175,7 +176,7 @@ class ShippingOptionAdmin(DFCModelAdmin):
 def retry_import(modeladmin, request, queryset):
     for record in queryset:
         for data_batch in record.data_batches:
-            parser = ProxyRefreshParser(record.data_server_source)
+            parser = ProxyRefreshParser(record.data_server_source.urlid)
             parser.parse(data_batch)
             parser.clean_up()
             if settings.DFC_STORE_IMPORT_REPORTS:
@@ -184,8 +185,8 @@ def retry_import(modeladmin, request, queryset):
 
 @admin.register(models.ResourceImportRecord)
 class ResourceImportRecordAdmin(admin.ModelAdmin):
-    list_display = ["import_started_at", "data_server_source", "source"]
-    list_filter = ["source"]
+    list_display = ["import_started_at", "source"]
+    list_filter = ["source", "data_server_source"]
     actions = [retry_import]
 
 
