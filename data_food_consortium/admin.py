@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib import admin
+from django.core.exceptions import FieldDoesNotExist
 from djangoldp.admin import DjangoLDPAdmin
 
 from data_food_consortium import models
@@ -13,6 +14,26 @@ class DFCModelAdmin(DjangoLDPAdmin):
     list_filter = ["data_server_source"]
     search_fields = ["urlid", "proxy_of"]
     readonly_fields = ["created_at", "updated_at"]
+    export_fields = ["_all_fields"]  # Extension on DjangoLDP export CSV feature.
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        if self.export_fields == ["_all_fields"]:
+            self.export_fields = [
+                f.name
+                for f in self.model._meta.get_fields()
+                if not (f.many_to_many or f.one_to_many)
+            ]
+
+    def resolve_verbose_name(self, field_path):
+        """Used in DjangoLDP CSV export. Overridden to prioritise RDF format"""
+        field = self
+        for field_name in field_path.split("__"):
+            try:
+                field = field.model._meta.get_field(field_name)
+            except FieldDoesNotExist:
+                return None
+        return getattr(field, "rdf_type", field.verbose_name)
 
 
 @admin.register(models.Enterprise)
