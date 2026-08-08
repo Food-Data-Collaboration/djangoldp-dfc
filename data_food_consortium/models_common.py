@@ -5,6 +5,11 @@ class AbstractPlatform(Model):
     class Meta:
         abstract = True
 
+    @classmethod
+    def get_unique_kwargs(self, urlid):
+        # Used to override some behaviour in the CSV import (see forms.py)
+        return {"urlid": urlid}
+
 
 class DataServer(AbstractPlatform):
     """

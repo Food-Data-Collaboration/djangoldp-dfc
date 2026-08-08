@@ -26,7 +26,11 @@ class EnterpriseImportForm(BaseCSVImportForm):
             fields["proxy_of"] = fields.pop("urlid")
         return fields
 
-    def get_unique_kwargs(self, urlid):
+    def get_unique_kwargs(self, model, urlid):
+        # Most objects in DFC database should be identified by the object they are a proxy of, during import.
+        # A couple of types from the technical ontology are not references to an external object.
+        if hasattr(model, "get_unique_kwargs") and callable(model.get_unique_kwargs):
+            return model.get_unique_kwargs(urlid)
         return {"proxy_of": urlid}
 
     def clean(self):
