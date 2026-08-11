@@ -24,7 +24,10 @@ DFC_KEYCLOAK_READ_SCOPES = {"ReadEnterprise": "enterprises/"}
 # Defines a mapping between models and scopes. A static binding that is consistent for all data-servers.
 DFC_KEYCLOAK_MODEL_READ_SCOPES = {"dfc-b:Enterprise": "ReadEnterprise"}
 
-LDP_RDF_CONTEXT = "https://cdn.startinblox.com/owl/dfc.jsonld"
+LDP_RDF_CONTEXT = (
+    "https://cdn.jsdelivr.net/gh/datafoodconsortium/ontology/context/context_2.0.0.json"
+)
+LDP_RDF_CONTEXT_V1 = "https://cdn.jsdelivr.net/gh/datafoodconsortium/ontology/context/context_1.16.0.json"
 
 MIDDLEWARE = ["data_food_consortium.middleware.DisbaleJWTMiddleware"]
 
