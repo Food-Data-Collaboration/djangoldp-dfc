@@ -32,7 +32,8 @@ class AbstractDFCModel(Model):
 
 class AbstractAddress(AbstractDFCModel):
     city = fields.TextField(
-        rdf_type="dfc-b:hasCity",
+        rdf_type="dfc-b:city",
+        other_rdf_types=["dfc-b:hasCity"],
         blank=True,
         null=True,
     )
@@ -52,7 +53,8 @@ class AbstractAddress(AbstractDFCModel):
         null=True,
     )
     postcode = fields.TextField(
-        rdf_type="dfc-b:hasPostalCode",
+        rdf_type="dfc-b:postcode",
+        other_rdf_types=["dfc-b:hasPostalCode"],
         blank=True,
         null=True,
     )
@@ -62,7 +64,8 @@ class AbstractAddress(AbstractDFCModel):
         null=True,
     )
     street = fields.TextField(
-        rdf_type="dfc-b:hasStreet",
+        rdf_type="dfc-b:street",
+        other_rdf_types=["dfc-b:hasStreet"],
         blank=True,
         null=True,
     )
@@ -145,7 +148,8 @@ class Enterprise(AbstractAgent):
     )  # xsd:Boolean
 
     class Meta(AbstractAgent.Meta):
-        rdf_type = "dfc-b:Enterprise"
+        rdf_type = "dfc-b:Organization"
+        other_rdf_types = ["dfc-b:Enterprise"]
         depth = 10
         serializer_fields = [
             "@id",
@@ -341,7 +345,8 @@ class AbstractProduct(AbstractDFCModel):
         null=True,
     )
     image = fields.TextField(
-        rdf_type="dfc-b:image",
+        rdf_type="dfc-b:Image",
+        other_rdf_types=["dfc-b:image"],
         blank=True,
         null=True,
     )
@@ -887,8 +892,9 @@ class ShippingOption(AbstractDFCModel):
     )
     delivers_at = fields.ForeignKey(
         PhysicalPlace,
-        rdf_type="dfc-b:deliversAt",
-        related_rdf_type="dfc-b:deliveries",
+        rdf_type="dfc-b:deliveredAt",
+        other_rdf_types=["dfc-b:deliversAt"],
+        related_rdf_type="dfc-b:deliveries",  # TODO: dfc-b:deliveries no longer exists.
         blank=True,
         null=True,
         related_name="deliveries",
@@ -897,12 +903,13 @@ class ShippingOption(AbstractDFCModel):
     picked_up_at = fields.ForeignKey(
         PhysicalPlace,
         rdf_type="dfc-b:pickedUpAt",
-        related_rdf_type="dfc-b:collections",
+        related_rdf_type="dfc-b:collections",  # TODO: dfc-b:collections no longer exists.
         blank=True,
         null=True,
         related_name="collections",
         on_delete=models.SET_NULL,
     )
+    # TODO: pickUp and pickUpStep properties
 
     has_type = fields.CharField(
         choices=ShippingOptionType.choices,

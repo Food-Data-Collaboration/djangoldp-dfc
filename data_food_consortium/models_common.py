@@ -4,6 +4,7 @@ from djangoldp.models import Model
 class AbstractPlatform(Model):
     class Meta:
         abstract = True
+        rdf_type = "dfc-t:Platform"
 
     @classmethod
     def get_unique_kwargs(self, urlid):
