@@ -78,3 +78,8 @@ In all cases, the endpoint on the proxy server is `/djangoldp-dfc/webhook/`, and
 The Product models (the children of AbstractProduct) are different _forms_ of Product based on their relationship to the supply chain. Product _type_ on the other hand refers to the type of product (e.g. bread, vegetable). The exhaustive list of valid values for this field comes from the [dfc-pt ontology](http://w3id.org/dfc/taxonomies/productTypes.rdf), and accordingly in our implementation the field is a TextChoices field bound to the enum `data_food_consortium.enums.ProductType`.
 
 The dfc-pt ontology will change over time, and this enum will need to be updated with new values. To make the process easier, this repository includes a management command that can be run with `python manage.py check_product_types`. The command will compare the latest version of the ontology to the defined values of the enumeration and will suggest changes to the enumeration based on any differences.
+
+### Running Tests
+
+* [Set up a sibserver with this package in system link](https://git.startinblox.com/documentation/doc/-/blob/master/source/import_documentation/djangoldp_guide/install-djangoldp-server.rst).
+* Run the test runner with: `python -m unittest data_food_consortium.tests.runner`.
