@@ -75,6 +75,6 @@ In all cases, the endpoint on the proxy server is `/djangoldp-dfc/webhook/`, and
 
 ### Maintenance of the ProductTypes data
 
-The Product models (the children of AbstractProduct) are different _forms_ of Product based on their relationship to the supply chain. Product _type_ on the other hand refers to the type of product (e.g. bread, vegetable). The exhaustive list of valid values for this field comes from the [dfc-pt ontology](https://raw.githubusercontent.com/datafoodconsortium/taxonomies/refs/heads/main/productTypes.rdf), and accordingly in our implementation the field is a TextChoices field bound to the enum `data_food_consortium.enums.ProductType`.
+The Product models (the children of AbstractProduct) are different _forms_ of Product based on their relationship to the supply chain. Product _type_ on the other hand refers to the type of product (e.g. bread, vegetable). The exhaustive list of valid values for this field comes from the [dfc-pt ontology](http://w3id.org/dfc/taxonomies/productTypes.rdf), and accordingly in our implementation the field is a TextChoices field bound to the enum `data_food_consortium.enums.ProductType`.
 
 The dfc-pt ontology will change over time, and this enum will need to be updated with new values. To make the process easier, this repository includes a management command that can be run with `python manage.py check_product_types`. The command will compare the latest version of the ontology to the defined values of the enumeration and will suggest changes to the enumeration based on any differences.
