@@ -26,9 +26,6 @@ To configure the dataservers in the federation, please override the following in
 * `DFC_DATASERVER_URLS`. Use base URLs, for example `http://localhost:8001/`.
 * `DFC_KEYCLOAK_READ_SCOPES`. The scopes to scrape (e.g. `ReadEnterprise`). The available scopes are configured in your Keycloak Realm.
 
-For the following settings, the default values should suffice.
-* `DFC_KEYCLOAK_MODEL_READ_SCOPES`. Maps RDF classes from the DFC ontologies to the scopes required to read them.
-
 By default cache refreshes and refresh webhooks will create records in the database about the import for debugging purposes. This can be disabled by changing the setting `DFC_STORE_IMPORT_REPORTS` to `False`.
 
 To test your configuration and initialise data from the configured dataservers, please run the command `python manage.py refresh_from_cache`.

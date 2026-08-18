@@ -21,9 +21,6 @@ DFC_STORE_IMPORT_REPORTS = True
 # TODO: ReadOrders and ReadProducts aren't implemented on the staging data-server, but should be included.
 DFC_KEYCLOAK_READ_SCOPES = {"ReadEnterprise": "enterprises/"}
 
-# Defines a mapping between models and scopes. A static binding that is consistent for all data-servers.
-DFC_KEYCLOAK_MODEL_READ_SCOPES = {"dfc-b:Enterprise": "ReadEnterprise"}
-
 LDP_RDF_CONTEXT = (
     "https://cdn.jsdelivr.net/gh/datafoodconsortium/ontology/context/context_2.0.0.json"
 )
