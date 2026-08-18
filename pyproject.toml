@@ -3,4 +3,7 @@
 "data_food_consortium/apps.py" = ["F401"]
 "data_food_consortium/migrations/*" = ["RUF012"]
 "data_food_consortium/models.py" = ["RUF012"]
+"data_food_consortium/models_common.py" = ["RUF012"]
+"data_food_consortium/models_permissioning.py" = ["RUF012"]
 "data_food_consortium/views.py" = ["RUF012"]
+"data_food_consortium/tests/factories/*" = ["UP031"]

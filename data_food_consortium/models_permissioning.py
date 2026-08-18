@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.db import models
+from django.db.models import Q
 from djangoldp import fields
 from djangoldp.models import Model
 
@@ -26,16 +28,33 @@ class AssignedScope(Model):
     )
     platform = fields.ForeignKey(
         Platform,
-        null=False,
-        blank=False,
+        null=True,
+        blank=True,
         on_delete=models.CASCADE,
         related_name="assigned_scopes",
-        help_text="The platform the scope is assigned to",
+        help_text="A scope can be assigned to a platform, and all of its members",
+    )
+    user = fields.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="assigned_scopes",
+        help_text="A scope can be assigned to an individual user",
     )
 
+    class Meta(Model.Meta):
+        constraints = [
+            models.CheckConstraint(
+                check=(Q(platform__isnull=False) & Q(user__isnull=True))
+                | (Q(platform__isnull=True) & Q(user__isnull=False)),
+                name="assigned_to_exactly_one_object",
+            ),
+        ]
+
     def __str__(self):
-        return f"{self.scope} ({self.permissioned_subject})"
+        return f"{self.scope} ({self.permissioned_object})"
 
     @property
-    def permissioned_subject(self):
-        return self.platform
+    def permissioned_object(self):
+        return self.platform if self.platform is not None else self.user
