@@ -7,6 +7,8 @@ from django.conf import settings
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
+from data_food_consortium.models_common import Platform
+
 
 def keycloak_is_configured():
     """Returns True if keycloak settings have been configured on the server."""
@@ -81,6 +83,17 @@ class KeycloakResourceServerAuthentication(BaseAuthentication):
 
         try:
             claims = self.get_valid_claims(token.split(" ")[1])
-            request.platform_urlid = claims["client_id"]
+            platform_urlid = claims["client_id"]
         except JoseError:
             raise AuthenticationFailed("Invalid token")
+        except KeyError:
+            raise AuthenticationFailed("Missing claim, client_id")
+
+        try:
+            request.platform = Platform.objects.get(urlid=platform_urlid)
+        except Platform.DoesNotExist:
+            if platform_urlid not in settings.DFC_DATASERVER_URLS:
+                raise AuthenticationFailed(
+                    f"Platform {platform_urlid} is not federated with this server"
+                )
+            request.platform = Platform.objects.create(urlid=platform_urlid)
