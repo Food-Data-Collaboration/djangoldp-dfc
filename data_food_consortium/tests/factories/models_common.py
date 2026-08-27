@@ -18,3 +18,12 @@ class DataServerFactory(AbstractPlatformFactory):
 class PlatformFactory(AbstractPlatformFactory):
     class Meta:
         model = Platform
+
+
+class AbstractDFCFactory(factory.django.DjangoModelFactory):
+    data_server_source = factory.SubFactory(
+        "data_food_consortium.tests.factories.DataServerFactory"
+    )
+
+    class Meta:
+        abstract = True
