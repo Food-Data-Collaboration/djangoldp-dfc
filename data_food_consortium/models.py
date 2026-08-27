@@ -4,6 +4,7 @@ from djangoldp.models import Model
 from rdflib import Graph
 
 from data_food_consortium.enums import (
+    PermissioningScope,
     ProductType,
     ResourceImportSource,
     ShippingOptionType,
@@ -188,6 +189,8 @@ class Enterprise(AbstractAgent):
             "shipping_options",
         ]
         disable_url = True  # Disables DjangoLDP auto-url generation
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
         return self.urlid
@@ -232,6 +235,8 @@ class EnterpriseAddress(AbstractAddress):
             "street",
         ]
         container_path = "enterprise_addresses"
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
         return f"{self.address_of} address"
@@ -262,6 +267,8 @@ class SocialMedia(AbstractDFCModel):
         rdf_type = "dfc-b:SocialMedia"
         serializer_fields = ["@id", "proxy_of", "data_server_source", "name", "url"]
         container_path = "social_medias"
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
         return f"{self.enterprise}: {self.name}"
@@ -306,6 +313,8 @@ class Person(AbstractAgent):
             "places",
         ]
         nested_fields = ["affiliates", "places"]
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
@@ -410,6 +419,8 @@ class AbstractProduct(AbstractDFCModel):
     class Meta:
         abstract = True
         rdf_type = "dfc-b:DefinedProduct"
+        dfc_read_scope = PermissioningScope.READ_PRODUCTS
+        dfc_write_scope = PermissioningScope.WRITE_PRODUCTS
 
     @classmethod
     def serializer_class(cls):
@@ -486,6 +497,8 @@ class LocalizedProduct(AbstractDFCModel):
         rdf_type = "dfc-b:LocalizedProduct"
         serializer_fields = ["@id", "proxy_of", "data_server_source", "reference_of"]
         disable_url = True  # Disables DjangoLDP auto-url generation
+        dfc_read_scope = PermissioningScope.READ_PRODUCTS
+        dfc_write_scope = PermissioningScope.WRITE_PRODUCTS
 
     def __str__(self):
         return f"Localized {self.reference_of}"
@@ -543,6 +556,8 @@ class CatalogItem(AbstractDFCModel):
         ]
         nested_fields = ["offers"]
         container_path = "catalog_items"
+        dfc_read_scope = PermissioningScope.READ_PRODUCTS
+        dfc_write_scope = PermissioningScope.WRITE_PRODUCTS
 
     def __str__(self):
         return f"CatalogItem {self.references} ({self.managed_by})"
@@ -569,6 +584,8 @@ class CustomerCategory(AbstractDFCModel):
         serializer_fields = ["@id", "proxy_of", "data_server_source", "name", "offers"]
         nested_fields = ["offers"]
         container_path = "customer_categories"
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
         return f"CatalogItem {self.id}"
@@ -588,6 +605,8 @@ class Price(AbstractDFCModel):
             "value",
             "has_unit",
         ]
+        dfc_read_scope = PermissioningScope.READ_PRODUCTS
+        dfc_write_scope = PermissioningScope.WRITE_PRODUCTS
 
     def __str__(self):
         return f"Price {self.value} ({self.has_unit})"
@@ -629,6 +648,8 @@ class Offer(AbstractDFCModel):
     class Meta:
         rdf_type = "dfc-b:Offer"
         serializer_fields = ["@id", "proxy_of", "data_server_source", "offered_for"]
+        dfc_read_scope = PermissioningScope.READ_PRODUCTS
+        dfc_write_scope = PermissioningScope.WRITE_PRODUCTS
 
     def __str__(self):
         return f"Offer of {self.offers} to {self.offered_to} for {self.offered_for}"
@@ -660,6 +681,8 @@ class Service(AbstractDFCModel):
             "name",
         ]
         nested_fields = ["suppliers"]
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
         return self.name
@@ -696,6 +719,8 @@ class EnterpriseService(AbstractDFCModel):
             "service",
         ]
         container_path = "enterprise_services"
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
         return f"{self.service.name} ({self.enterprise})"
@@ -716,6 +741,8 @@ class PhysicalPlaceAddress(AbstractAddress):
             "region",
             "street",
         ]
+        dfc_read_scope = PermissioningScope.READ_ORDERS
+        dfc_write_scope = PermissioningScope.WRITE_ORDERS
 
     def __str__(self):
         return self.urlid
@@ -763,6 +790,8 @@ class PhysicalPlace(AbstractDFCModel):
             "phone_number",
             "URL",
         ]
+        dfc_read_scope = PermissioningScope.READ_ORDERS
+        dfc_write_scope = PermissioningScope.WRITE_ORDERS
 
     def __str__(self):
         return self.name if self.name and len(self.name) else str(self.address)
@@ -814,6 +843,8 @@ class Coordination(AbstractDFCModel):
             "sale_sessions",
         ]
         nested_fields = ["sale_sessions"]
+        dfc_read_scope = PermissioningScope.READ_ORDERS
+        dfc_write_scope = PermissioningScope.WRITE_ORDERS
 
     def __str__(self):
         return f"{self.name} ({self.enterprise})"
@@ -861,6 +892,8 @@ class SaleSession(AbstractDFCModel):
             "shipping_options",
         ]
         nested_fields = ["shipping_options"]
+        dfc_read_scope = PermissioningScope.READ_ORDERS
+        dfc_write_scope = PermissioningScope.WRITE_ORDERS
 
     def __str__(self):
         return f"{self.coordination} ({self.start_date} - {self.end_date})"
@@ -936,6 +969,8 @@ class ShippingOption(AbstractDFCModel):
             "delivers_at",
             "picked_up_at",
         ]
+        dfc_read_scope = PermissioningScope.READ_ORDERS
+        dfc_write_scope = PermissioningScope.WRITE_ORDERS
 
     def __str__(self):
         return f"{self.urlid} ({self.sale_session})"
