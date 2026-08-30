@@ -11,7 +11,7 @@ from djangoldp.models import Model
 from rdflib import BNode, Graph, URIRef
 from rdflib.exceptions import ParserError
 
-from data_food_consortium.enums import ResourceImportSource
+from data_food_consortium.enums import PermissioningScope, ResourceImportSource
 from data_food_consortium.models import ResourceImportRecord
 from data_food_consortium.models_common import DataServer
 from data_food_consortium.proxy.keycloak import (
@@ -21,7 +21,6 @@ from data_food_consortium.proxy.keycloak import (
 from data_food_consortium.utils import get_serializer_class
 
 RDF_TYPE_PREDICATE = URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
-SCOPES_BASE_URI = "https://github.com/datafoodconsortium/taxonomies/releases/latest/download/scopes.rdf#"
 
 
 logger = logging.getLogger(__name__)
@@ -414,12 +413,14 @@ class ResourceServerClient:
         response = requests.get(discovery_endpoint)
         if response.status_code == 200:
             data_server_endpoints = response.json()
-            for scope in settings.DFC_KEYCLOAK_READ_SCOPES:
-                key = f"{SCOPES_BASE_URI}{scope}"
-                if key in data_server_endpoints:
-                    val = data_server_endpoints[key]
+            for full, short in PermissioningScope.short_values_mapping.items():
+                if (
+                    full in data_server_endpoints
+                    and data_server_endpoints[full] is not None
+                ):
+                    val = data_server_endpoints[full]
                     val = val.removeprefix("/")
-                    self.scope_config[scope] = val
+                    self.scope_config[short] = val
             logger.debug(
                 f"Configured ResourceServerClient with discovered config {self.scope_config}"
             )
