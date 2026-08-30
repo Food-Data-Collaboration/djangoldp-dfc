@@ -1,9 +1,12 @@
 from django.db.utils import IntegrityError
 from django.test import TestCase
-from djangoldp.factories import UserFactory
 
 from data_food_consortium.models_permissioning import AssignedScope
-from data_food_consortium.tests.factories import DataServerFactory, PlatformFactory
+from data_food_consortium.tests.factories import (
+    DataServerFactory,
+    DFCUserFactory,
+    PlatformFactory,
+)
 
 
 class TestModelsPermissioning(TestCase):
@@ -18,7 +21,7 @@ class TestModelsPermissioning(TestCase):
         # Both objects assigned scope.
         data_server = DataServerFactory()
         platform = PlatformFactory()
-        user = UserFactory()
+        user = DFCUserFactory()
         with self.assertRaises(IntegrityError):
             AssignedScope.objects.create(
                 data_server=data_server, platform=platform, user=user
@@ -28,6 +31,6 @@ class TestModelsPermissioning(TestCase):
         # Either platform or user assigned scope — no exception raised.
         data_server = DataServerFactory()
         platform = PlatformFactory()
-        user = UserFactory()
+        user = DFCUserFactory()
         AssignedScope.objects.create(data_server=data_server, platform=platform)
         AssignedScope.objects.create(data_server=data_server, user=user)
