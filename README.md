@@ -22,9 +22,7 @@ To use live data with your application you will need to configure Keycloak. Befo
 * `KEYCLOAK_CLIENT_ID`
 * `KEYCLOAK_CLIENT_SECRET`
 
-To configure the dataservers in the federation, please override the following in DjangoLDP settings:
-* `DFC_DATASERVER_URLS`. Use base URLs, for example `http://localhost:8001/`.
-* `DFC_KEYCLOAK_READ_SCOPES`. The scopes to scrape (e.g. `ReadEnterprise`). The available scopes are configured in your Keycloak Realm.
+To configure dataservers in the federation, create and configure an instance of the model `DataServer` for each. You can do this via the Django admin site, at `/admin/data_food_consortium/dataserver/`.
 
 By default cache refreshes and refresh webhooks will create records in the database about the import for debugging purposes. This can be disabled by changing the setting `DFC_STORE_IMPORT_REPORTS` to `False`.
 

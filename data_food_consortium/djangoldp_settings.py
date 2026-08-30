@@ -12,13 +12,12 @@ KEYCLOAK_URL = f"{os.getenv('KEYCLOAK_URL')}/realms/{os.getenv('KEYCLOAK_REALM')
 KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID")
 KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET")
 
-# Dataservers that this platform caches data from.
-DFC_DATASERVER_URLS = os.getenv("DATASERVER_URLS", "").split(",")
 # Set to False to disable storing logs of dataserver imports in the database.
 DFC_STORE_IMPORT_REPORTS = True
 
 # Defines the default read scopes, if not overridden during the Discovery mechanism.
 # TODO: ReadOrders and ReadProducts aren't implemented on the staging data-server, but should be included.
+# TODO: Scopes could be configured per-dataserver by using the DataServer model.
 DFC_KEYCLOAK_READ_SCOPES = {"ReadEnterprise": "enterprises/"}
 
 LDP_RDF_CONTEXT = (

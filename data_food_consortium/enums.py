@@ -13,6 +13,18 @@ class PermissioningScope(models.TextChoices):
     READ_ENTERPRISE = (f"{DFC_SCOPES_BASE_URI}#ReadEnterprise", "ReadEnterprise")
     WRITE_ENTERPRISE = (f"{DFC_SCOPES_BASE_URI}#WriteEnterprise", "WriteEnterprise")
 
+    @classmethod
+    @property
+    def short_values(cls):
+        # NOTE: convention allows us to refer to scopes by their identifier (e.g. ReadEnterprise).
+        return cls.short_values_mapping.values()
+
+    @classmethod
+    @property
+    def short_values_mapping(cls):
+        # NOTE: convention allows us to refer to scopes by their identifier (e.g. ReadEnterprise).
+        return {s: s.split("#")[-1] for s in cls.values}
+
 
 class ShippingOptionType(models.TextChoices):
     PICKUP = (f"{DFC_B_URL}#PickupOption", "Pick-up")

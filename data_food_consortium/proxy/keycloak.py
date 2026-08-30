@@ -92,8 +92,8 @@ class KeycloakResourceServerAuthentication(BaseAuthentication):
         try:
             request.platform = Platform.objects.get(urlid=platform_urlid)
         except Platform.DoesNotExist:
-            if platform_urlid not in settings.DFC_DATASERVER_URLS:
-                raise AuthenticationFailed(
-                    f"Platform {platform_urlid} is not federated with this server"
-                )
-            request.platform = Platform.objects.create(urlid=platform_urlid)
+            # TODO: allow for different failure strategies: admin notification and open registration.
+            # Allowing open registration here would only award the user access to public resources.
+            raise AuthenticationFailed(
+                f"Platform {platform_urlid} is not federated with this server"
+            )

@@ -1,7 +1,7 @@
-from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from data_food_consortium.enums import ResourceImportSource
+from data_food_consortium.models_common import DataServer
 from data_food_consortium.proxy.resource import ResourceServerClient
 
 
@@ -12,7 +12,7 @@ class Command(BaseCommand):
         pass
 
     def handle(self, *args, **options):
-        for dataserver_url in settings.DFC_DATASERVER_URLS:
-            ResourceServerClient(dataserver_url).request_all_scopes(
+        for data_server in DataServer.objects.all():
+            ResourceServerClient(data_server.urlid).request_all_scopes(
                 ResourceImportSource.COMMAND_LINE
             )
