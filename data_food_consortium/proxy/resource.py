@@ -407,6 +407,8 @@ class ResourceServerClient:
 
     def __init__(self, dataserver_url):
         self.dataserver_url = dataserver_url
+        if not self.dataserver_url.endswith("/"):
+            self.dataserver_url += "/"
         self.scope_config = settings.DFC_KEYCLOAK_READ_SCOPES.copy()
 
         discovery_endpoint = f"{dataserver_url}.well-known/dfc/"
