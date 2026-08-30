@@ -2,13 +2,30 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from djangoldp import fields
-from djangoldp.models import Model
+from djangoldp.models import LDPModelManager, Model
 
+from data_food_consortium.auth_utils import user_oidc_provider
 from data_food_consortium.enums import PermissioningScope
 from data_food_consortium.models_common import DataServer, Platform
 
 
+class AssignedScopeQuerySet(models.QuerySet):
+    def for_user(self, user):
+        # Filter by those given to the user as an individual and by virtue of the user's platform.
+        platform = Platform.objects.get_or_create(urlid=user_oidc_provider(user))[0]
+        return self.filter(Q(platform=platform) | Q(user=user))
+
+
+class AssignedScopeModelManager(LDPModelManager):
+    def get_queryset(self):
+        return AssignedScopeQuerySet(self.model, using=self._db)
+
+    def for_user(self, user):
+        return self.get_queryset().for_user()
+
+
 class AssignedScope(Model):
+    # TODO: need to assign scope by more than data_server, need to define the data owner from within the data_server...
     data_server = fields.ForeignKey(
         DataServer,
         null=False,
@@ -42,6 +59,7 @@ class AssignedScope(Model):
         related_name="assigned_scopes",
         help_text="A scope can be assigned to an individual user",
     )
+    objects = AssignedScopeModelManager()
 
     class Meta(Model.Meta):
         constraints = [

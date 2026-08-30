@@ -11,6 +11,7 @@ from djangoldp_csv.views import BaseCSVImportView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from data_food_consortium.filters import DFCGrantedPermissionsFilterBackend
 from data_food_consortium.forms import EnterpriseImportForm
 from data_food_consortium.proxy.keycloak import KeycloakResourceServerAuthentication
 from data_food_consortium.proxy.webhook import WebhookEventType, WebhookProcessor
@@ -90,15 +91,24 @@ class EnterpriseImportView(BaseCSVImportView):
 
 
 class EnterpriseViewset(LDPViewSet):
-    filter_backends = [SearchByQueryParamFilterBackend]
+    filter_backends = [
+        DFCGrantedPermissionsFilterBackend,
+        SearchByQueryParamFilterBackend,
+    ]
 
 
 class PersonViewset(LDPViewSet):
-    filter_backends = [SearchByQueryParamFilterBackend]
+    filter_backends = [
+        DFCGrantedPermissionsFilterBackend,
+        SearchByQueryParamFilterBackend,
+    ]
 
 
 class SuppliedProductViewset(LDPViewSet):
-    filter_backends = [SearchByQueryParamFilterBackend]
+    filter_backends = [
+        DFCGrantedPermissionsFilterBackend,
+        SearchByQueryParamFilterBackend,
+    ]
 
 
 class ProxyWebIDView(InstanceWebIDView):
