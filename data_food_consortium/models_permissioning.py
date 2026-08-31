@@ -15,7 +15,7 @@ class AssignedScope(Model):
         blank=False,
         on_delete=models.CASCADE,
         related_name="granted_scopes",
-        help_text="The enterprise (producer) which granted and controls the scope",
+        help_text="The organization (producer) which granted and controls the scope",
     )
     scope = fields.CharField(
         # rdf_type="dfc-b:hasType",  # TODO: what is the RDF type?

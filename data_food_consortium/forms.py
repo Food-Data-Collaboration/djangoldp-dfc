@@ -3,21 +3,21 @@ from djangoldp_csv.forms import BaseCSVImportForm, FileField
 
 from data_food_consortium.models import (
     CatalogItem,
-    Enterprise,
-    EnterpriseAddress,
+    Organization,
+    OrganizationAddress,
     SuppliedProduct,
 )
 
 
-class EnterpriseImportForm(BaseCSVImportForm):
+class OrganizationImportForm(BaseCSVImportForm):
     """
     An extension of DjangoLDP-CSV's main form class designed to provide the import
-    of all key data to an Enterprise in a single form.
+    of all key data to an Organization in a single form.
     """
 
     supplied_products = FileField(model_type=SuppliedProduct, required=False)
-    enterprises = FileField(model_type=Enterprise, required=False)
-    addresses = FileField(model_type=EnterpriseAddress, required=False)
+    organizations = FileField(model_type=Organization, required=False)
+    addresses = FileField(model_type=OrganizationAddress, required=False)
     catalog_items = FileField(model_type=CatalogItem, required=False)
 
     def _process_csv_fields(self, model, row):
