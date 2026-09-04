@@ -17,7 +17,7 @@ class AbstractDFCModel(Model):
     updated_at = models.DateTimeField(auto_now=True)
     data_server_source = fields.ForeignKey(
         DataServer,
-        on_delete=models.RESTRICT,
+        on_delete=models.CASCADE,
         help_text="The dataserver which provided the instance",
         blank=True,
         null=True,
