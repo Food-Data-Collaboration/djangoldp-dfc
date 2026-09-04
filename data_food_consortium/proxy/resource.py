@@ -411,7 +411,7 @@ class ResourceServerClient:
             self.dataserver_url += "/"
         self.scope_config = settings.DFC_KEYCLOAK_READ_SCOPES.copy()
 
-        discovery_endpoint = f"{dataserver_url}.well-known/dfc/"
+        discovery_endpoint = f"{self.dataserver_url}.well-known/dfc/"
         response = requests.get(discovery_endpoint)
         if response.status_code == 200:
             data_server_endpoints = response.json()
