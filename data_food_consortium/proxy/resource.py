@@ -357,7 +357,7 @@ class ProxyRefreshParser:
         LDPSerializer creates objects implicitly that in our case become duplicate objects, because of the requirement that
         proxy_of define the original resource, not a urlid (DjangoLDP is not built with proxies in mind).
 
-        Similarly, objects may have been previously cached and sinced removed, either because they were deleted or because
+        Similarly, objects may have been previously cached and since removed, either because they were deleted or because
         we no longer have permission to proxy them.
 
         This method finds and deletes those objects.
