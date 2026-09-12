@@ -31,4 +31,12 @@ class Migration(migrations.Migration):
                 null=True,
             ),
         ),
+        migrations.AddField(
+            model_name="resourceimportrecord",
+            name="successful",
+            field=models.BooleanField(
+                default=True,
+                help_text="Set automatically on save based on the error fields",
+            ),
+        ),
     ]

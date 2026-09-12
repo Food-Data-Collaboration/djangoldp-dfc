@@ -985,6 +985,9 @@ class ResourceImportRecord(models.Model):
         max_length=64,
         help_text="How the import was triggered (e.g. via the command line or webhook)",
     )
+    successful = models.BooleanField(
+        default=True, help_text="Set automatically on save based on the error fields"
+    )
     error_type = models.CharField(
         choices=ResourceImportFailure.choices,
         blank=True,
@@ -996,6 +999,12 @@ class ResourceImportRecord(models.Model):
 
     def __str__(self):
         return f"{self.data_server_source} ({self.import_started_at})"
+
+    def save(self, *args, **kwargs):
+        self.successful = self.error_type is None and (
+            self.error_message is None or not len(self.error_message)
+        )
+        super().save(*args, **kwargs)
 
     @property
     def parsed_data(self):
