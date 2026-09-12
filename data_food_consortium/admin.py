@@ -206,8 +206,8 @@ def retry_import(modeladmin, request, queryset):
 
 @admin.register(models.ResourceImportRecord)
 class ResourceImportRecordAdmin(admin.ModelAdmin):
-    list_display = ["import_started_at", "source"]
-    list_filter = ["source", "data_server_source"]
+    list_display = ["import_started_at", "source", "successful", "error_type"]
+    list_filter = ["source", "data_server_source", "successful", "error_type"]
     actions = [retry_import]
 
 
