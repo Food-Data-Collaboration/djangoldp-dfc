@@ -38,6 +38,13 @@ class ResourceImportSource(models.TextChoices):
     REFRESH_WEBHOOK = ("refresh_webhook", "Refresh webhook event")
 
 
+class ResourceImportFailure(models.TextChoices):
+    AUTHENTICATION_ERROR = ("auth_err", "Authentication Error")
+    NETWORK_ERROR = ("request_err", "Network Error")
+    PARSE_ERROR = ("parse_err", "Parse Error")
+    OTHER = ("other_err", "Other")
+
+
 class WebhookEventSource(models.TextChoices):
     ADMIN_SITE = ("admin_site", "Admin site")
     DATASERVER = ("dataserver", "Received from dataserver")

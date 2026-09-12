@@ -5,6 +5,7 @@ from rdflib import Graph
 
 from data_food_consortium.enums import (
     ProductType,
+    ResourceImportFailure,
     ResourceImportSource,
     ShippingOptionType,
     WebhookEventSource,
@@ -984,6 +985,14 @@ class ResourceImportRecord(models.Model):
         max_length=64,
         help_text="How the import was triggered (e.g. via the command line or webhook)",
     )
+    error_type = models.CharField(
+        choices=ResourceImportFailure.choices,
+        blank=True,
+        null=True,
+        max_length=64,
+        help_text="Null if there was no failure; otherwise, the category of failure",
+    )
+    error_message = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.data_server_source} ({self.import_started_at})"
