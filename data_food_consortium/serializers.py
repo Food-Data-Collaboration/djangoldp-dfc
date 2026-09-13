@@ -8,7 +8,11 @@ class StrippedHTMLCharField(fields.CharField):
         return striptags(super().to_internal_value(data))
 
 
-class EnterpriseSerializer(LDPSerializer):
+class LDPSerializerDFC(LDPSerializer):
+    pass
+
+
+class EnterpriseSerializer(LDPSerializerDFC):
     description = StrippedHTMLCharField(
         allow_blank=True, allow_null=True, required=False
     )
@@ -17,7 +21,7 @@ class EnterpriseSerializer(LDPSerializer):
     )
 
 
-class ProductSerializer(LDPSerializer):
+class ProductSerializer(LDPSerializerDFC):
     description = StrippedHTMLCharField(
         allow_blank=True, allow_null=True, required=False
     )
