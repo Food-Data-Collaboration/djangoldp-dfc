@@ -195,6 +195,19 @@ class ProxyRefreshParser:
             "allow_create_backlink": False,
         }
 
+    def _recursively_force_data_server_source(self, value):
+        if isinstance(value, dict):
+            if "data_server_source" not in value:
+                value["data_server_source"] = self._serialize_data_server_source()
+            for key in value:
+                if isinstance(value[key], (dict, list)) and key != "data_server_source":
+                    value[key] = self._recursively_force_data_server_source(value[key])
+        elif isinstance(value, list):
+            for i in range(len(value)):
+                if isinstance(value[i], (dict, list)):
+                    value[i] = self._recursively_force_data_server_source(value[i])
+        return value
+
     def parse(self, jsonld_data):
         jsonld_data = self.transform_dfc_v1(jsonld_data)
         self._cache_data_batch(jsonld_data)
@@ -344,6 +357,8 @@ class ProxyRefreshParser:
                 resolved_model, 10, serialize_fields_extra
             )
             resource_data["@id"] = instance.urlid
+            resource_data = self._recursively_force_data_server_source(resource_data)
+
             serializer = serializer_class(instance, data=resource_data)
             if not serializer.is_valid():
                 for err in serializer.errors:
