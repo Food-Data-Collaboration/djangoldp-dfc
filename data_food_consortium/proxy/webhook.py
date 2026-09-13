@@ -26,16 +26,15 @@ class WebhookProcessor:
     def process_update(self):
         # Parse and import the graph.
         # TODO: trigger optional behaviour in the parser to fail loudly.
-        parser = ProxyRefreshParser(self.data["@id"])
-        parser.parse(self.data)
-        if settings.DFC_STORE_IMPORT_REPORTS:
-            parser.create_record(ResourceImportSource.UPDATE_WEBHOOK)
+        ProxyRefreshParser(self.data["@id"], ResourceImportSource.UPDATE_WEBHOOK).parse(
+            self.data
+        )
 
     def process_refresh(self):
         host = urlparse(self.platform_urlid)
-        ResourceServerClient(f"{host.scheme}://{host.netloc}/").request_scope(
-            self.data["scope"], ResourceImportSource.REFRESH_WEBHOOK
-        )
+        ResourceServerClient(
+            f"{host.scheme}://{host.netloc}/", ResourceImportSource.REFRESH_WEBHOOK
+        ).request_scope(self.data["scope"])
 
     def process_revoke(self, source):
         for obj in self.data["objects"]:

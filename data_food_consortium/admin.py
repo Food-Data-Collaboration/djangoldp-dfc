@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.contrib import admin
 from django.core.exceptions import FieldDoesNotExist
 from djangoldp.admin import DjangoLDPAdmin
@@ -197,11 +196,9 @@ class ShippingOptionAdmin(DFCModelAdmin):
 def retry_import(modeladmin, request, queryset):
     for record in queryset:
         for data_batch in record.data_batches:
-            parser = ProxyRefreshParser(record.data_server_source.urlid)
-            parser.parse(data_batch)
-            parser.clean_up()
-            if settings.DFC_STORE_IMPORT_REPORTS:
-                parser.create_record(ResourceImportSource.ADMIN_SITE)
+            ProxyRefreshParser(
+                record.data_server_source.urlid, ResourceImportSource.ADMIN_SITE
+            ).parse(data_batch)
 
 
 @admin.register(models.ResourceImportRecord)

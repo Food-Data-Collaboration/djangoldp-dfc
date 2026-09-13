@@ -33,6 +33,7 @@ class ProxyRefreshParser:
     """
 
     data_server_source = None
+    source = None
     import_started_at = None
     imported_models = None
     imported_subjects = None
@@ -64,9 +65,10 @@ class ProxyRefreshParser:
         "dfc-b:collections",
     ]
 
-    def __init__(self, data_server_source):
+    def __init__(self, data_server_source, source: ResourceImportSource):
         dss = urllib.parse.urlparse(data_server_source)
         self.data_server_source = {"urlid": f"{dss.scheme}://{dss.netloc}"}
+        self.source = source
         self.import_started_at = timezone.now()
         self.imported_models = set()
         self.imported_subjects = []
@@ -184,6 +186,7 @@ class ProxyRefreshParser:
 
     def parse(self, jsonld_data):
         jsonld_data = self.transform_dfc_v1(jsonld_data)
+        self._cache_data_batch(jsonld_data)
 
         graph = Graph()
         graph.parse(data=jsonld_data, format="json-ld")
@@ -352,7 +355,8 @@ class ProxyRefreshParser:
                 instance.save()
 
         logger.info(f"Finished importing {len(self.imported_subjects)} subjects")
-        self._cache_data_batch(jsonld_data)
+        self.clean_up()
+        self.create_record()
 
     def clean_up(self):
         """
@@ -382,20 +386,21 @@ class ProxyRefreshParser:
                 f"Deleted {deleted} instances of {imported_model} during cleanup on data source {self.data_server_source['urlid']}"
             )
 
-    def create_record(self, source: ResourceImportSource):
+    def create_record(self):
         self.imported_subjects.sort()
         data_server_source = Model.get_or_create(
             DataServer, self.data_server_source["urlid"]
         )
-        ResourceImportRecord.objects.create(
-            import_started_at=self.import_started_at,
-            data_batches=self.data_batches,
-            data_server_source=data_server_source,
-            imported_models="\n".join([str(m) for m in self.imported_models]),
-            imported_subjects="\n".join(self.imported_subjects),
-            deleted_subjects="\n".join(self.deleted_subjects),
-            source=source,
-        )
+        if settings.DFC_STORE_IMPORT_REPORTS is True:
+            ResourceImportRecord.objects.create(
+                import_started_at=self.import_started_at,
+                data_batches=self.data_batches,
+                data_server_source=data_server_source,
+                imported_models="\n".join([str(m) for m in self.imported_models]),
+                imported_subjects="\n".join(self.imported_subjects),
+                deleted_subjects="\n".join(self.deleted_subjects),
+                source=self.source,
+            )
         logger.info(f"Import finished at {timezone.now()}. Report created in database")
 
 
@@ -406,11 +411,14 @@ class ResourceServerClient:
 
     dataserver_url = ""
     scope_config = None
+    source = None
+    parser = None
 
-    def __init__(self, dataserver_url):
+    def __init__(self, dataserver_url, source: ResourceImportSource):
         self.dataserver_url = dataserver_url
         if not self.dataserver_url.endswith("/"):
             self.dataserver_url += "/"
+        self.source = source
         self.scope_config = settings.DFC_KEYCLOAK_READ_SCOPES.copy()
 
         discovery_endpoint = f"{self.dataserver_url}.well-known/dfc/"
@@ -434,10 +442,10 @@ class ResourceServerClient:
                 f"discovery endpoint {discovery_endpoint} responded {response.status_code}"
             )
 
-    def request_all_scopes(self, source: ResourceImportSource):
+    def request_all_scopes(self):
         for scope in settings.DFC_KEYCLOAK_READ_SCOPES:
             try:
-                self.request_scope(scope, source)
+                self.request_scope(scope)
             except KeycloakAuthenticationException as e:
                 msg = f"ERR authenticating dataserver {self.dataserver_url} with Keycloak, while requesting {scope}"
                 logger.error(msg)
@@ -455,7 +463,7 @@ class ResourceServerClient:
         token = KeycloakClient(scope).get_access_token()
         return {"Authorization": f"Bearer {token}"}
 
-    def _request_and_process_scope_at_endpoint(self, parser, scope: str, endpoint: str):
+    def _request_and_process_scope_at_endpoint(self, scope: str, endpoint: str):
         """
         Requests an access token from Keycloak for a given scope,
         and then recursively requests from the dataserver the associated endpoint,
@@ -467,13 +475,13 @@ class ResourceServerClient:
         data = response.json()
 
         # Parse the returned graph, resolve and import to the relevant models.
-        parser.parse(data)
+        self.parser.parse(data)
 
         # If there is more data, continue.
         if "next" in data and data["next"] is not None:
-            self._request_and_process_scope_at_endpoint(parser, scope, data["next"])
+            self._request_and_process_scope_at_endpoint(scope, data["next"])
 
-    def request_scope(self, scope: str, source: ResourceImportSource):
+    def request_scope(self, scope: str):
         """
         Discovers the appropriate endpoint for a scope, and then processes it.
 
@@ -482,8 +490,5 @@ class ResourceServerClient:
         """
         # Each scope has an associated endpoint.
         endpoint = f"{self.dataserver_url}{self.scope_config[scope]}"
-        parser = ProxyRefreshParser(endpoint)
-        self._request_and_process_scope_at_endpoint(parser, scope, endpoint)
-        parser.clean_up()
-        if settings.DFC_STORE_IMPORT_REPORTS:
-            parser.create_record(source)
+        self.parser = ProxyRefreshParser(endpoint, self.source)
+        self._request_and_process_scope_at_endpoint(scope, endpoint)

@@ -13,6 +13,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         for data_server in DataServer.objects.all():
-            ResourceServerClient(data_server.urlid).request_all_scopes(
-                ResourceImportSource.COMMAND_LINE
-            )
+            ResourceServerClient(
+                data_server.urlid, ResourceImportSource.COMMAND_LINE
+            ).request_all_scopes()
