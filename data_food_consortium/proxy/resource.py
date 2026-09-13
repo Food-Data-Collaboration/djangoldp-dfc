@@ -37,6 +37,7 @@ class ProxyRefreshParser:
     """
 
     data_server_source = None
+    data_server_source_urlid = None
     source = None
     import_started_at = None
     imported_models = None
@@ -71,7 +72,10 @@ class ProxyRefreshParser:
 
     def __init__(self, data_server_source, source: ResourceImportSource):
         dss = urllib.parse.urlparse(data_server_source)
-        self.data_server_source = {"urlid": f"{dss.scheme}://{dss.netloc}"}
+        self.data_server_source_urlid = f"{dss.scheme}://{dss.netloc}"
+        self.data_server_source = Model.get_or_create(
+            DataServer, self.data_server_source_urlid
+        )
         self.source = source
         self.import_started_at = timezone.now()
         self.imported_models = set()
@@ -168,6 +172,9 @@ class ProxyRefreshParser:
 
         return jsonld_data
 
+    def _serialize_data_server_source(self):
+        return {"@id": self.data_server_source_urlid}
+
     def _serialize_related_instance(self, field, instance, related_instance_urlid):
         related_instance = field.related_model.objects.filter(
             proxy_of=related_instance_urlid
@@ -183,7 +190,7 @@ class ProxyRefreshParser:
 
         return {
             "@id": related_instance.urlid,
-            "data_server_source": self.data_server_source,
+            "data_server_source": self._serialize_data_server_source(),
             "proxy_of": related_instance_urlid,
             "allow_create_backlink": False,
         }
@@ -206,7 +213,7 @@ class ProxyRefreshParser:
             # Parsing the graph into serializable data for our model
             resource_data = {
                 "@type": resolved_type_uri,
-                "data_server_source": self.data_server_source,
+                "data_server_source": self._serialize_data_server_source(),
                 "proxy_of": str(subject),
                 "allow_create_backlink": False,
             }
@@ -255,9 +262,7 @@ class ProxyRefreshParser:
                 instance = resolved_model.objects.create(
                     proxy_of=str(subject), allow_create_backlink=False
                 )
-            instance.data_server_source = Model.get_or_create(
-                DataServer, self.data_server_source["urlid"]
-            )
+            instance.data_server_source = self.data_server_source
             self.imported_models.add(resolved_model)
             self.imported_subjects.append(instance.proxy_of)
 
@@ -373,11 +378,11 @@ class ProxyRefreshParser:
         This method finds and deletes those objects.
         """
         ldp_serializer_created = Q(
-            urlid__startswith=self.data_server_source["urlid"], proxy_of__isnull=True
+            urlid__startswith=self.data_server_source_urlid, proxy_of__isnull=True
         )
         missing_from_new_import = Q(
             updated_at__lt=self.import_started_at,
-            data_server_source__urlid__startswith=self.data_server_source["urlid"],
+            data_server_source__urlid__startswith=self.data_server_source_urlid,
         )
 
         for imported_model in self.imported_models:
@@ -387,19 +392,16 @@ class ProxyRefreshParser:
             self.deleted_subjects += [d.proxy_of for d in deleted]
             deleted.delete()
             logger.info(
-                f"Deleted {deleted} instances of {imported_model} during cleanup on data source {self.data_server_source['urlid']}"
+                f"Deleted {deleted} instances of {imported_model} during cleanup on data source {self.data_server_source_urlid}"
             )
 
     def create_record(self):
         self.imported_subjects.sort()
-        data_server_source = Model.get_or_create(
-            DataServer, self.data_server_source["urlid"]
-        )
         if settings.DFC_STORE_IMPORT_REPORTS is True:
             ResourceImportRecord.objects.create(
                 import_started_at=self.import_started_at,
                 data_batches=self.data_batches,
-                data_server_source=data_server_source,
+                data_server_source=self.data_server_source,
                 imported_models="\n".join([str(m) for m in self.imported_models]),
                 imported_subjects="\n".join(self.imported_subjects),
                 deleted_subjects="\n".join(self.deleted_subjects),
