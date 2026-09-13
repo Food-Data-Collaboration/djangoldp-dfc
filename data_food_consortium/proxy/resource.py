@@ -4,6 +4,7 @@ import uuid
 
 import requests
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from djangoldp import fields
@@ -341,7 +342,8 @@ class ProxyRefreshParser:
                 )
                 serializer = serializer_class(instance, data=resource_data)
                 serializer.is_valid(raise_exception=True)
-            instance = serializer.save()
+            with transaction.atomic():
+                instance = serializer.save()
 
             # Workaround for lack of JSONField support in DjangoLDP.
             if len(json_fields):
