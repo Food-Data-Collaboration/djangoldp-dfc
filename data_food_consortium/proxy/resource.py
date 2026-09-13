@@ -12,7 +12,11 @@ from djangoldp.models import Model
 from rdflib import BNode, Graph, URIRef
 from rdflib.exceptions import ParserError
 
-from data_food_consortium.enums import PermissioningScope, ResourceImportSource
+from data_food_consortium.enums import (
+    PermissioningScope,
+    ResourceImportFailure,
+    ResourceImportSource,
+)
 from data_food_consortium.models import ResourceImportRecord
 from data_food_consortium.models_common import DataServer
 from data_food_consortium.proxy.keycloak import (
@@ -442,22 +446,44 @@ class ResourceServerClient:
                 f"discovery endpoint {discovery_endpoint} responded {response.status_code}"
             )
 
+    def _log_dataserver_import_error(
+        self, msg: str, e: Exception, failure_kind: ResourceImportFailure
+    ):
+        msg = f"{msg}\n{e.__class__.__name__}: {e}"
+        logger.error(msg)
+
+        # Create database record.
+        data_server_source = Model.get_or_create(DataServer, self.dataserver_url)
+        if settings.DFC_STORE_IMPORT_REPORTS is not False:  # True, or "error"
+            ResourceImportRecord.objects.create(
+                import_started_at=self.parser.import_started_at,
+                data_server_source=data_server_source,
+                data_batches=self.parser.data_batches,
+                source=self.source,
+                error_type=failure_kind,
+                error_message=msg,
+            )
+        logger.info(f"Failure logged at {timezone.now()}. Report created in database")
+
     def request_all_scopes(self):
         for scope in settings.DFC_KEYCLOAK_READ_SCOPES:
             try:
                 self.request_scope(scope)
             except KeycloakAuthenticationException as e:
                 msg = f"ERR authenticating dataserver {self.dataserver_url} with Keycloak, while requesting {scope}"
-                logger.error(msg)
-                logger.error(str(e))
+                self._log_dataserver_import_error(
+                    msg, e, ResourceImportFailure.AUTHENTICATION_ERROR
+                )
             except requests.exceptions.RequestException as e:
                 msg = f"ERR requesting a scope {scope} from dataserver {self.dataserver_url}"
-                logger.error(msg)
-                logger.error(str(e))
+                self._log_dataserver_import_error(
+                    msg, e, ResourceImportFailure.NETWORK_ERROR
+                )
             except (ParserError, ValueError, TypeError) as e:
                 msg = f"ERR parsing response from dataserver {self.dataserver_url} on scope {scope}"
-                logger.error(msg)
-                logger.error(str(e))
+                self._log_dataserver_import_error(
+                    msg, e, ResourceImportFailure.PARSE_ERROR
+                )
 
     def _get_auth_headers_with_token_for_scope(self, scope: str):
         token = KeycloakClient(scope).get_access_token()

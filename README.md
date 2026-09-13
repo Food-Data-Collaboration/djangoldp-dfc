@@ -24,7 +24,7 @@ To use live data with your application you will need to configure Keycloak. Befo
 
 To configure dataservers in the federation, create and configure an instance of the model `DataServer` for each. You can do this via the Django admin site, at `/admin/data_food_consortium/dataserver/`.
 
-By default cache refreshes and refresh webhooks will create records in the database about the import for debugging purposes. This can be disabled by changing the setting `DFC_STORE_IMPORT_REPORTS` to `False`.
+By default cache refreshes and refresh webhooks will create records in the database about the import for debugging purposes. This can be disabled by changing the setting `DFC_STORE_IMPORT_REPORTS` to `False`, or to `"error"`, for logging errors only.
 
 To test your configuration and initialise data from the configured dataservers, please run the command `python manage.py refresh_from_cache`.
 
