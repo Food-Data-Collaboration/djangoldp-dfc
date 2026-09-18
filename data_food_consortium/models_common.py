@@ -1,9 +1,20 @@
 import urllib
 
-from djangoldp.models import Model
+from djangoldp.models import LDPModelManager, Model
+
+
+class PlatformManager(LDPModelManager):
+    def get(self, *args, **kwargs):
+        # Avoid duplicate platform hosts with different paths.
+        if "urlid" in kwargs:
+            urlid = urllib.parse.urlparse(kwargs["urlid"])
+            kwargs["urlid"] = f"{urlid.scheme}://{urlid.netloc}"
+        return super().get_or_create(*args, **kwargs)
 
 
 class AbstractPlatform(Model):
+    objects = PlatformManager()
+
     class Meta:
         abstract = True
         rdf_type = "dfc-t:Platform"
@@ -12,12 +23,6 @@ class AbstractPlatform(Model):
     def get_unique_kwargs(self, urlid):
         # Used to override some behaviour in the CSV import (see forms.py)
         return {"urlid": urlid}
-
-    def save(self, *args, **kwargs):
-        # Avoid duplicate platform hosts with different paths.
-        urlid = urllib.parse.urlparse(self.urlid)
-        self.urlid = f"{urlid.scheme}://{urlid.netloc}"
-        return super().save(*args, **kwargs)
 
 
 class DataServer(AbstractPlatform):
