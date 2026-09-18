@@ -9,7 +9,7 @@ class PlatformManager(LDPModelManager):
         if "urlid" in kwargs:
             urlid = urllib.parse.urlparse(kwargs["urlid"])
             kwargs["urlid"] = f"{urlid.scheme}://{urlid.netloc}"
-        return super().get_or_create(*args, **kwargs)
+        return super().get(*args, **kwargs)
 
 
 class AbstractPlatform(Model):
