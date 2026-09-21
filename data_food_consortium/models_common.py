@@ -3,7 +3,7 @@ import urllib
 from djangoldp.models import LDPModelManager, Model
 
 
-class PlatformManager(LDPModelManager):
+class DataServerManager(LDPModelManager):
     def get(self, *args, **kwargs):
         # Avoid duplicate platform hosts with different paths.
         if "urlid" in kwargs:
@@ -13,8 +13,6 @@ class PlatformManager(LDPModelManager):
 
 
 class AbstractPlatform(Model):
-    objects = PlatformManager()
-
     class Meta:
         abstract = True
         rdf_type = "dfc-t:Platform"
@@ -29,6 +27,8 @@ class DataServer(AbstractPlatform):
     """
     A data source, which granted a platform access to some data.
     """
+
+    objects = DataServerManager()
 
     def __str__(self):
         return self.urlid
