@@ -1,6 +1,7 @@
 import os
 
 import requests
+import validators
 from authlib.jose import jwt as authlib_jwt
 from authlib.jose.errors import JoseError
 from django.conf import settings
@@ -71,6 +72,7 @@ class KeycloakResourceServerAuthentication(BaseAuthentication):
             claims_options={
                 "aud": {"essential": True, "value": "account"},
                 "client_id": {"essential": True},
+                "webid": {"essential": False},
             },
         )
         claims.validate()
@@ -83,11 +85,20 @@ class KeycloakResourceServerAuthentication(BaseAuthentication):
 
         try:
             claims = self.get_valid_claims(token.split(" ")[1])
-            platform_urlid = claims["client_id"]
+            # Try to fallback to client ID for backwards compatibility (if valid URL).
+            platform_urlid = (
+                claims["webid"] if "webid" in claims else claims["client_id"]
+            )
+            if not validators.url(platform_urlid):
+                raise ValueError()
         except JoseError:
             raise AuthenticationFailed("Invalid token")
         except KeyError:
-            raise AuthenticationFailed("Missing claim, client_id")
+            raise AuthenticationFailed("Missing required claim: webid, or client_id")
+        except ValueError:
+            raise AuthenticationFailed(
+                "Missing claim webid and client_id is not a webid"
+            )
 
         try:
             request.platform = Platform.objects.get(urlid=platform_urlid)
