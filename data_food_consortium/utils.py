@@ -1,4 +1,4 @@
-from djangoldp.serializers import LDPSerializer
+from data_food_consortium.serializers import LDPSerializerDFC
 
 
 def get_serializer_class(model, depth=2, extra_fields=None):
@@ -7,7 +7,7 @@ def get_serializer_class(model, depth=2, extra_fields=None):
     try:
         serializer_class = model.serializer_class()
     except AttributeError:
-        serializer_class = LDPSerializer
+        serializer_class = LDPSerializerDFC
 
     # NOTE: LDPSerializer cannot be used without meta args:
     #   https://git.startinblox.com/djangoldp-packages/djangoldp/-/issues/277

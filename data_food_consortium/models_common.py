@@ -1,4 +1,15 @@
-from djangoldp.models import Model
+import urllib
+
+from djangoldp.models import LDPModelManager, Model
+
+
+class DataServerManager(LDPModelManager):
+    def get(self, *args, **kwargs):
+        # Avoid duplicate platform hosts with different paths.
+        if "urlid" in kwargs:
+            urlid = urllib.parse.urlparse(kwargs["urlid"])
+            kwargs["urlid"] = f"{urlid.scheme}://{urlid.netloc}"
+        return super().get(*args, **kwargs)
 
 
 class AbstractPlatform(Model):
@@ -16,6 +27,8 @@ class DataServer(AbstractPlatform):
     """
     A data source, which granted a platform access to some data.
     """
+
+    objects = DataServerManager()
 
     def __str__(self):
         return self.urlid

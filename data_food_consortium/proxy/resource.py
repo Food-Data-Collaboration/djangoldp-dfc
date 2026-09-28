@@ -4,6 +4,7 @@ import uuid
 
 import requests
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from djangoldp import fields
@@ -11,7 +12,11 @@ from djangoldp.models import Model
 from rdflib import BNode, Graph, URIRef
 from rdflib.exceptions import ParserError
 
-from data_food_consortium.enums import ResourceImportSource
+from data_food_consortium.enums import (
+    PermissioningScope,
+    ResourceImportFailure,
+    ResourceImportSource,
+)
 from data_food_consortium.models import ResourceImportRecord
 from data_food_consortium.models_common import DataServer
 from data_food_consortium.proxy.keycloak import (
@@ -21,7 +26,6 @@ from data_food_consortium.proxy.keycloak import (
 from data_food_consortium.utils import get_serializer_class
 
 RDF_TYPE_PREDICATE = URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
-SCOPES_BASE_URI = "https://github.com/datafoodconsortium/taxonomies/releases/latest/download/scopes.rdf#"
 
 
 logger = logging.getLogger(__name__)
@@ -33,6 +37,8 @@ class ProxyRefreshParser:
     """
 
     data_server_source = None
+    data_server_source_urlid = None
+    source = None
     import_started_at = None
     imported_models = None
     imported_subjects = None
@@ -64,9 +70,13 @@ class ProxyRefreshParser:
         "dfc-b:collections",
     ]
 
-    def __init__(self, data_server_source):
+    def __init__(self, data_server_source, source: ResourceImportSource):
         dss = urllib.parse.urlparse(data_server_source)
-        self.data_server_source = {"urlid": f"{dss.scheme}://{dss.netloc}"}
+        self.data_server_source_urlid = f"{dss.scheme}://{dss.netloc}"
+        self.data_server_source = Model.get_or_create(
+            DataServer, self.data_server_source_urlid
+        )
+        self.source = source
         self.import_started_at = timezone.now()
         self.imported_models = set()
         self.imported_subjects = []
@@ -162,6 +172,9 @@ class ProxyRefreshParser:
 
         return jsonld_data
 
+    def _serialize_data_server_source(self):
+        return {"@id": self.data_server_source_urlid}
+
     def _serialize_related_instance(self, field, instance, related_instance_urlid):
         related_instance = field.related_model.objects.filter(
             proxy_of=related_instance_urlid
@@ -177,13 +190,27 @@ class ProxyRefreshParser:
 
         return {
             "@id": related_instance.urlid,
-            "data_server_source": self.data_server_source,
+            "data_server_source": self._serialize_data_server_source(),
             "proxy_of": related_instance_urlid,
             "allow_create_backlink": False,
         }
 
+    def _recursively_force_data_server_source(self, value):
+        if isinstance(value, dict):
+            if "data_server_source" not in value:
+                value["data_server_source"] = self._serialize_data_server_source()
+            for key in value:
+                if isinstance(value[key], (dict, list)) and key != "data_server_source":
+                    value[key] = self._recursively_force_data_server_source(value[key])
+        elif isinstance(value, list):
+            for i in range(len(value)):
+                if isinstance(value[i], (dict, list)):
+                    value[i] = self._recursively_force_data_server_source(value[i])
+        return value
+
     def parse(self, jsonld_data):
         jsonld_data = self.transform_dfc_v1(jsonld_data)
+        self._cache_data_batch(jsonld_data)
 
         graph = Graph()
         graph.parse(data=jsonld_data, format="json-ld")
@@ -199,7 +226,7 @@ class ProxyRefreshParser:
             # Parsing the graph into serializable data for our model
             resource_data = {
                 "@type": resolved_type_uri,
-                "data_server_source": self.data_server_source,
+                "data_server_source": self._serialize_data_server_source(),
                 "proxy_of": str(subject),
                 "allow_create_backlink": False,
             }
@@ -248,9 +275,7 @@ class ProxyRefreshParser:
                 instance = resolved_model.objects.create(
                     proxy_of=str(subject), allow_create_backlink=False
                 )
-            instance.data_server_source = Model.get_or_create(
-                DataServer, self.data_server_source["urlid"]
-            )
+            instance.data_server_source = self.data_server_source
             self.imported_models.add(resolved_model)
             self.imported_subjects.append(instance.proxy_of)
 
@@ -332,6 +357,8 @@ class ProxyRefreshParser:
                 resolved_model, 10, serialize_fields_extra
             )
             resource_data["@id"] = instance.urlid
+            resource_data = self._recursively_force_data_server_source(resource_data)
+
             serializer = serializer_class(instance, data=resource_data)
             if not serializer.is_valid():
                 for err in serializer.errors:
@@ -342,7 +369,8 @@ class ProxyRefreshParser:
                 )
                 serializer = serializer_class(instance, data=resource_data)
                 serializer.is_valid(raise_exception=True)
-            instance = serializer.save()
+            with transaction.atomic():
+                instance = serializer.save()
 
             # Workaround for lack of JSONField support in DjangoLDP.
             if len(json_fields):
@@ -351,24 +379,25 @@ class ProxyRefreshParser:
                 instance.save()
 
         logger.info(f"Finished importing {len(self.imported_subjects)} subjects")
-        self._cache_data_batch(jsonld_data)
+        self.clean_up()
+        self.create_record()
 
     def clean_up(self):
         """
         LDPSerializer creates objects implicitly that in our case become duplicate objects, because of the requirement that
         proxy_of define the original resource, not a urlid (DjangoLDP is not built with proxies in mind).
 
-        Similarly, objects may have been previously cached and sinced removed, either because they were deleted or because
+        Similarly, objects may have been previously cached and since removed, either because they were deleted or because
         we no longer have permission to proxy them.
 
         This method finds and deletes those objects.
         """
         ldp_serializer_created = Q(
-            urlid__startswith=self.data_server_source["urlid"], proxy_of__isnull=True
+            urlid__startswith=self.data_server_source_urlid, proxy_of__isnull=True
         )
         missing_from_new_import = Q(
             updated_at__lt=self.import_started_at,
-            data_server_source__urlid__startswith=self.data_server_source["urlid"],
+            data_server_source__urlid__startswith=self.data_server_source_urlid,
         )
 
         for imported_model in self.imported_models:
@@ -378,23 +407,21 @@ class ProxyRefreshParser:
             self.deleted_subjects += [d.proxy_of for d in deleted]
             deleted.delete()
             logger.info(
-                f"Deleted {deleted} instances of {imported_model} during cleanup on data source {self.data_server_source['urlid']}"
+                f"Deleted {deleted} instances of {imported_model} during cleanup on data source {self.data_server_source_urlid}"
             )
 
-    def create_record(self, source: ResourceImportSource):
+    def create_record(self):
         self.imported_subjects.sort()
-        data_server_source = Model.get_or_create(
-            DataServer, self.data_server_source["urlid"]
-        )
-        ResourceImportRecord.objects.create(
-            import_started_at=self.import_started_at,
-            data_batches=self.data_batches,
-            data_server_source=data_server_source,
-            imported_models="\n".join([str(m) for m in self.imported_models]),
-            imported_subjects="\n".join(self.imported_subjects),
-            deleted_subjects="\n".join(self.deleted_subjects),
-            source=source,
-        )
+        if settings.DFC_STORE_IMPORT_REPORTS is True:
+            ResourceImportRecord.objects.create(
+                import_started_at=self.import_started_at,
+                data_batches=self.data_batches,
+                data_server_source=self.data_server_source,
+                imported_models="\n".join([str(m) for m in self.imported_models]),
+                imported_subjects="\n".join(self.imported_subjects),
+                deleted_subjects="\n".join(self.deleted_subjects),
+                source=self.source,
+            )
         logger.info(f"Import finished at {timezone.now()}. Report created in database")
 
 
@@ -405,21 +432,28 @@ class ResourceServerClient:
 
     dataserver_url = ""
     scope_config = None
+    source = None
+    parser = None
 
-    def __init__(self, dataserver_url):
+    def __init__(self, dataserver_url, source: ResourceImportSource):
         self.dataserver_url = dataserver_url
+        if not self.dataserver_url.endswith("/"):
+            self.dataserver_url += "/"
+        self.source = source
         self.scope_config = settings.DFC_KEYCLOAK_READ_SCOPES.copy()
 
-        discovery_endpoint = f"{dataserver_url}.well-known/dfc/"
+        discovery_endpoint = f"{self.dataserver_url}.well-known/dfc/"
         response = requests.get(discovery_endpoint)
         if response.status_code == 200:
             data_server_endpoints = response.json()
-            for scope in settings.DFC_KEYCLOAK_READ_SCOPES:
-                key = f"{SCOPES_BASE_URI}{scope}"
-                if key in data_server_endpoints:
-                    val = data_server_endpoints[key]
+            for full, short in PermissioningScope.short_values_mapping.items():
+                if (
+                    full in data_server_endpoints
+                    and data_server_endpoints[full] is not None
+                ):
+                    val = data_server_endpoints[full]
                     val = val.removeprefix("/")
-                    self.scope_config[scope] = val
+                    self.scope_config[short] = val
             logger.debug(
                 f"Configured ResourceServerClient with discovered config {self.scope_config}"
             )
@@ -429,28 +463,50 @@ class ResourceServerClient:
                 f"discovery endpoint {discovery_endpoint} responded {response.status_code}"
             )
 
-    def request_all_scopes(self, source: ResourceImportSource):
+    def _log_dataserver_import_error(
+        self, msg: str, e: Exception, failure_kind: ResourceImportFailure
+    ):
+        msg = f"{msg}\n{e.__class__.__name__}: {e}"
+        logger.error(msg)
+
+        # Create database record.
+        data_server_source = Model.get_or_create(DataServer, self.dataserver_url)
+        if settings.DFC_STORE_IMPORT_REPORTS is not False:  # True, or "error"
+            ResourceImportRecord.objects.create(
+                import_started_at=self.parser.import_started_at,
+                data_server_source=data_server_source,
+                data_batches=self.parser.data_batches,
+                source=self.source,
+                error_type=failure_kind,
+                error_message=msg,
+            )
+        logger.info(f"Failure logged at {timezone.now()}. Report created in database")
+
+    def request_all_scopes(self):
         for scope in settings.DFC_KEYCLOAK_READ_SCOPES:
             try:
-                self.request_scope(scope, source)
+                self.request_scope(scope)
             except KeycloakAuthenticationException as e:
                 msg = f"ERR authenticating dataserver {self.dataserver_url} with Keycloak, while requesting {scope}"
-                logger.error(msg)
-                logger.error(str(e))
+                self._log_dataserver_import_error(
+                    msg, e, ResourceImportFailure.AUTHENTICATION_ERROR
+                )
             except requests.exceptions.RequestException as e:
                 msg = f"ERR requesting a scope {scope} from dataserver {self.dataserver_url}"
-                logger.error(msg)
-                logger.error(str(e))
+                self._log_dataserver_import_error(
+                    msg, e, ResourceImportFailure.NETWORK_ERROR
+                )
             except (ParserError, ValueError, TypeError) as e:
                 msg = f"ERR parsing response from dataserver {self.dataserver_url} on scope {scope}"
-                logger.error(msg)
-                logger.error(str(e))
+                self._log_dataserver_import_error(
+                    msg, e, ResourceImportFailure.PARSE_ERROR
+                )
 
     def _get_auth_headers_with_token_for_scope(self, scope: str):
         token = KeycloakClient(scope).get_access_token()
         return {"Authorization": f"Bearer {token}"}
 
-    def _request_and_process_scope_at_endpoint(self, parser, scope: str, endpoint: str):
+    def _request_and_process_scope_at_endpoint(self, scope: str, endpoint: str):
         """
         Requests an access token from Keycloak for a given scope,
         and then recursively requests from the dataserver the associated endpoint,
@@ -462,13 +518,13 @@ class ResourceServerClient:
         data = response.json()
 
         # Parse the returned graph, resolve and import to the relevant models.
-        parser.parse(data)
+        self.parser.parse(data)
 
         # If there is more data, continue.
         if "next" in data and data["next"] is not None:
-            self._request_and_process_scope_at_endpoint(parser, scope, data["next"])
+            self._request_and_process_scope_at_endpoint(scope, data["next"])
 
-    def request_scope(self, scope: str, source: ResourceImportSource):
+    def request_scope(self, scope: str):
         """
         Discovers the appropriate endpoint for a scope, and then processes it.
 
@@ -477,8 +533,5 @@ class ResourceServerClient:
         """
         # Each scope has an associated endpoint.
         endpoint = f"{self.dataserver_url}{self.scope_config[scope]}"
-        parser = ProxyRefreshParser(endpoint)
-        self._request_and_process_scope_at_endpoint(parser, scope, endpoint)
-        parser.clean_up()
-        if settings.DFC_STORE_IMPORT_REPORTS:
-            parser.create_record(source)
+        self.parser = ProxyRefreshParser(endpoint, self.source)
+        self._request_and_process_scope_at_endpoint(scope, endpoint)

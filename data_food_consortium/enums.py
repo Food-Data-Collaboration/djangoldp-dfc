@@ -13,6 +13,18 @@ class PermissioningScope(models.TextChoices):
     READ_ENTERPRISE = (f"{DFC_SCOPES_BASE_URI}#ReadEnterprise", "ReadEnterprise")
     WRITE_ENTERPRISE = (f"{DFC_SCOPES_BASE_URI}#WriteEnterprise", "WriteEnterprise")
 
+    @classmethod
+    @property
+    def short_values(cls):
+        # NOTE: convention allows us to refer to scopes by their identifier (e.g. ReadEnterprise).
+        return cls.short_values_mapping.values()
+
+    @classmethod
+    @property
+    def short_values_mapping(cls):
+        # NOTE: convention allows us to refer to scopes by their identifier (e.g. ReadEnterprise).
+        return {s: s.split("#")[-1] for s in cls.values}
+
 
 class ShippingOptionType(models.TextChoices):
     PICKUP = (f"{DFC_B_URL}#PickupOption", "Pick-up")
@@ -24,6 +36,13 @@ class ResourceImportSource(models.TextChoices):
     COMMAND_LINE = ("command_line", "Command line")
     UPDATE_WEBHOOK = ("update_webhook", "Update webhook event")
     REFRESH_WEBHOOK = ("refresh_webhook", "Refresh webhook event")
+
+
+class ResourceImportFailure(models.TextChoices):
+    AUTHENTICATION_ERROR = ("auth_err", "Authentication Error")
+    NETWORK_ERROR = ("request_err", "Network Error")
+    PARSE_ERROR = ("parse_err", "Parse Error")
+    OTHER = ("other_err", "Other")
 
 
 class WebhookEventSource(models.TextChoices):
