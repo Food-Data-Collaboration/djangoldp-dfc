@@ -19,6 +19,7 @@ test_runner = DiscoverRunner(verbosity=1)
 
 failures = test_runner.run_tests(
     [
+        "data_food_consortium.tests.test_filters_permissioning",
         "data_food_consortium.tests.test_models_permissioning",
         "data_food_consortium.tests.test_ontology_flexibility",
     ]
