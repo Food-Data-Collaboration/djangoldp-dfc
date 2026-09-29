@@ -61,7 +61,7 @@ class CacheWebhookView(APIView):
                         status=400,
                     )
 
-        WebhookProcessor(request.platform.urlid, data).process()
+        WebhookProcessor(request.data_server.urlid, data).process()
         return Response({}, status=200)
 
 

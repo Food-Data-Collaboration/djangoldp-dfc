@@ -1056,7 +1056,7 @@ class RevokeWebhookRecord(models.Model):
     data = fields.JSONField(
         blank=True, null=True, help_text="The JSON data sent with the webhook"
     )
-    platform_urlid = fields.TextField(
+    data_server_urlid = fields.TextField(
         blank=True, null=True, help_text="The platform which sent the webhook"
     )
     source = fields.CharField(
@@ -1068,4 +1068,4 @@ class RevokeWebhookRecord(models.Model):
     )
 
     def __str__(self):
-        return f"{self.platform_urlid} ({self.completed_at})"
+        return f"{self.data_server_urlid} ({self.completed_at})"

@@ -8,7 +8,7 @@ from django.conf import settings
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from data_food_consortium.models_common import Platform
+from data_food_consortium.models_common import DataServer
 
 
 def keycloak_is_configured():
@@ -86,10 +86,10 @@ class KeycloakResourceServerAuthentication(BaseAuthentication):
         try:
             claims = self.get_valid_claims(token.split(" ")[1])
             # Try to fallback to client ID for backwards compatibility (if valid URL).
-            platform_urlid = (
+            data_server_urlid = (
                 claims["webid"] if "webid" in claims else claims["client_id"]
             )
-            if not validators.url(platform_urlid):
+            if not validators.url(data_server_urlid):
                 raise ValueError()
         except JoseError:
             raise AuthenticationFailed("Invalid token")
@@ -101,10 +101,10 @@ class KeycloakResourceServerAuthentication(BaseAuthentication):
             )
 
         try:
-            request.platform = Platform.objects.get(urlid=platform_urlid)
-        except Platform.DoesNotExist:
+            request.data_server = DataServer.objects.get(urlid=data_server_urlid)
+        except DataServer.DoesNotExist:
             # TODO: allow for different failure strategies: admin notification and open registration.
             # Allowing open registration here would only award the user access to public resources.
             raise AuthenticationFailed(
-                f"Platform {platform_urlid} is not federated with this server"
+                f"Data Server {data_server_urlid} is not federated with this server"
             )

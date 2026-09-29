@@ -16,11 +16,11 @@ class WebhookEventType(StrEnum):
 
 
 class WebhookProcessor:
-    platform_urlid = None
+    data_server_urlid = None
     data = None
 
-    def __init__(self, platform_urlid, data):
-        self.platform_urlid = platform_urlid
+    def __init__(self, data_server_urlid, data):
+        self.data_server_urlid = data_server_urlid
         self.data = data
 
     def process_update(self):
@@ -31,7 +31,7 @@ class WebhookProcessor:
         )
 
     def process_refresh(self):
-        host = urlparse(self.platform_urlid)
+        host = urlparse(self.data_server_urlid)
         ResourceServerClient(
             f"{host.scheme}://{host.netloc}/", ResourceImportSource.REFRESH_WEBHOOK
         ).request_scope(self.data["scope"])
@@ -43,7 +43,7 @@ class WebhookProcessor:
             ).delete()
         if settings.DFC_STORE_IMPORT_REPORTS:
             RevokeWebhookRecord.objects.create(
-                data=self.data, platform_urlid=self.platform_urlid, source=source
+                data=self.data, data_server_urlid=self.data_server_urlid, source=source
             )
 
     def process(self, source: WebhookEventSource = WebhookEventSource.DATASERVER):

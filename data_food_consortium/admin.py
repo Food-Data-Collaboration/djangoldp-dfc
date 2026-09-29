@@ -211,13 +211,13 @@ class ResourceImportRecordAdmin(admin.ModelAdmin):
 @admin.action(description="Retry webhook")
 def retry_webhook(modeladmin, request, queryset):
     for record in queryset:
-        WebhookProcessor(record.platform_urlid, record.data).process(
+        WebhookProcessor(record.data_server_urlid, record.data).process(
             WebhookEventSource.ADMIN_SITE
         )
 
 
 @admin.register(models.RevokeWebhookRecord)
 class RevokeWebhookRecordAdmin(admin.ModelAdmin):
-    list_display = ["completed_at", "platform_urlid", "source"]
+    list_display = ["completed_at", "data_server_urlid", "source"]
     list_filter = ["source"]
     actions = [retry_webhook]
