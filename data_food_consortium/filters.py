@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models import Q
 from rest_framework.filters import BaseFilterBackend
 
@@ -16,6 +17,8 @@ class DFCGrantedPermissionsFilterBackend(BaseFilterBackend):
         )
 
     def filter_queryset(self, request, queryset, view):
+        if not settings.DFC_USER_GRANTS_ENABLED:
+            return queryset
         return queryset.filter(
             Q(data_server_source=None)
             | Q(

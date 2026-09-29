@@ -1,5 +1,5 @@
 # from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from djangoldp.models import Model
 from rest_framework.test import APIClient
 
@@ -31,6 +31,26 @@ class TestFiltersPermissioning(TestCase):
         else:
             self.assertEqual(response.status_code, 404)
 
+    def test_filter_disabled_by_setting(self):
+        """
+        By default, DFC_USER_GRANTS_ENABLED is False. This test ensures that it correctly disables
+        filtering by granted permissions.
+        """
+        enterprise = (
+            EnterpriseFactory()
+        )  # I have not been granted specific permissions to access.
+
+        response = self.client.get(
+            Model.resource(Enterprise), content_type="application/ld+json"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["ldp:contains"]), 1)
+        assert response.data["ldp:contains"][0]["@id"] == enterprise.urlid
+
+        # GET the test enterprises directly.
+        self._test_direct_resource_access(enterprise, True)
+
+    @override_settings(DFC_USER_GRANTS_ENABLED=True)
     def test_filter_granted_enterprises(self):
         # Set up an enterprise which I do have permission to access, by specific grant.
         enterprise_granted_to_me = EnterpriseFactory()

@@ -22,6 +22,9 @@ DFC_KEYCLOAK_READ_SCOPES = {"ReadEnterprise": "enterprises/"}
 DFC_REQUESTED_SCOPES_DOCUMENT = (
     "https://cdn.startinblox.com/owl/dfc/taxonomies/cqcm.jsonld"
 )
+# If set to True, anonymous access will be disabled, and users will only be able to see data which they have been
+# granted access to by a data owner.
+DFC_USER_GRANTS_ENABLED = False
 
 LDP_RDF_CONTEXT = (
     "https://cdn.jsdelivr.net/gh/datafoodconsortium/ontology/context/context_2.0.0.json"
