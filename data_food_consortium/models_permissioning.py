@@ -25,7 +25,6 @@ class AssignedScopeModelManager(LDPModelManager):
 
 
 class AssignedScope(Model):
-    # TODO: need to assign scope by more than data_server, need to define the data owner from within the data_server...
     data_server = fields.ForeignKey(
         DataServer,
         null=False,
