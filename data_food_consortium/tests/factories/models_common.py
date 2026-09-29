@@ -24,6 +24,9 @@ class AbstractDFCFactory(factory.django.DjangoModelFactory):
     data_server_source = factory.SubFactory(
         "data_food_consortium.tests.factories.DataServerFactory"
     )
+    proxy_of = factory.LazyAttributeSequence(
+        lambda o, n: "%s/items/%d" % (o.data_server_source.urlid, n)
+    )
 
     class Meta:
         abstract = True
