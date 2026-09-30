@@ -416,7 +416,7 @@ class ProxyRefreshParser:
             ResourceImportRecord.objects.create(
                 import_started_at=self.import_started_at,
                 data_batches=self.data_batches,
-                data_server=self.data_server,
+                data_server=self.data_server_source,
                 imported_models="\n".join([str(m) for m in self.imported_models]),
                 imported_subjects="\n".join(self.imported_subjects),
                 deleted_subjects="\n".join(self.deleted_subjects),
