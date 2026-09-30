@@ -208,7 +208,7 @@ class ProxyRefreshParser:
                     value[i] = self._recursively_force_data_server_source(value[i])
         return value
 
-    def parse(self, jsonld_data):
+    def _do_parse(self, jsonld_data):
         jsonld_data = self.transform_dfc_v1(jsonld_data)
         self._cache_data_batch(jsonld_data)
 
@@ -369,8 +369,7 @@ class ProxyRefreshParser:
                 )
                 serializer = serializer_class(instance, data=resource_data)
                 serializer.is_valid(raise_exception=True)
-            with transaction.atomic():
-                instance = serializer.save()
+            instance = serializer.save()
 
             # Workaround for lack of JSONField support in DjangoLDP.
             if len(json_fields):
@@ -381,6 +380,10 @@ class ProxyRefreshParser:
         logger.info(f"Finished importing {len(self.imported_subjects)} subjects")
         self.clean_up()
         self.create_record()
+
+    def parse(self, jsonld_data):
+        with transaction.atomic():
+            self._do_parse(jsonld_data)
 
     def clean_up(self):
         """
