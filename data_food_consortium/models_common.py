@@ -2,6 +2,8 @@ import urllib
 
 from djangoldp.models import LDPModelManager, Model
 
+from data_food_consortium.auth_utils import resource_domain
+
 
 class DataServerManager(LDPModelManager):
     def get(self, *args, **kwargs):
@@ -32,6 +34,9 @@ class DataServer(AbstractPlatform):
 
     def __str__(self):
         return self.urlid
+
+    def resource_within_domain(self, resource_urlid):
+        return resource_domain(self.urlid) == resource_domain(resource_urlid)
 
 
 class Platform(AbstractPlatform):

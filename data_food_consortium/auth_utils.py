@@ -11,3 +11,7 @@ def user_oidc_provider(user):
     # NOTE: assumption made that the OIDC provider of the user is connected to their urlid
     parsed_urlid = urlparse(user.urlid)
     return f"{parsed_urlid.scheme}://{parsed_urlid.netloc}/"
+
+
+def resource_domain(urlid: str):
+    return urlparse(urlid).netloc
