@@ -27,7 +27,7 @@ class TestWebhooks(TestCase):
         self.client = APIClient()
         self.data_server = DataServerFactory()
 
-    def test_update_platform_access_webhook(self, mock_authenticate):
+    def test_update_webhook(self, mock_authenticate):
         mock_authenticate.side_effect = auth_platform_side_effect(self.data_server)
 
         enterprise = EnterpriseFactory(
@@ -55,7 +55,7 @@ class TestWebhooks(TestCase):
         # The new serialization of Enterprise replaces the Enterprise entirely.
         self.assertEqual(enterprise.description, old_description)
 
-    def test_webhook_update_others_resource(self, mock_authenticate):
+    def test_update_webhook_others_resource(self, mock_authenticate):
         """I cannot update a resource for which I am not the data owner"""
         mock_authenticate.side_effect = auth_platform_side_effect(self.data_server)
 
@@ -85,7 +85,7 @@ class TestWebhooks(TestCase):
         enterprise = Enterprise.objects.get()  # No new Enterprise has been created.
         self.assertEqual(enterprise.name, "Original")
 
-    def test_revoke_platform_access_webhook(self, mock_authenticate):
+    def test_revoke_webhook_platform(self, mock_authenticate):
         mock_authenticate.side_effect = auth_platform_side_effect(self.data_server)
 
         enterprise = EnterpriseFactory(data_server_source=self.data_server)
@@ -109,7 +109,7 @@ class TestWebhooks(TestCase):
         self.assertEqual(response.data, {})
         self.assertEqual(Enterprise.objects.count(), 0)  # object has been deleted.
 
-    def test_webhook_revoke_others_resource(self, mock_authenticate):
+    def test_revoke_webhook_others_resource(self, mock_authenticate):
         """I cannot revoke a resource for which I am not the data owner"""
         mock_authenticate.side_effect = auth_platform_side_effect(self.data_server)
 
