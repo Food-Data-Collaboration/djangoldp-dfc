@@ -36,7 +36,7 @@ class TestWebhooks(TestCase):
         old_description = enterprise.description
         webhook_data = {
             "@context": settings.LDP_RDF_CONTEXT,
-            "@id": enterprise.urlid,
+            "@id": enterprise.proxy_of,
             "@type": "dfc-b:Organization",
             "eventType": "update",
             "dfc-b:name": "New",
@@ -51,10 +51,9 @@ class TestWebhooks(TestCase):
         self.assertEqual(response.data, {})
 
         enterprise = Enterprise.objects.get()  # No new Enterprise has been created.
-        assert enterprise.name == webhook_data["dfc-b:name"]
+        self.assertEqual(enterprise.name, webhook_data["dfc-b:name"])
         # The new serialization of Enterprise replaces the Enterprise entirely.
-        assert enterprise.description != old_description
-        assert enterprise.description is None
+        self.assertEqual(enterprise.description, old_description)
 
     def test_revoke_platform_access_webhook(self, mock_authenticate):
         mock_authenticate.side_effect = auth_platform_side_effect(self.data_server)
