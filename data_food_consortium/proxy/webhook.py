@@ -6,7 +6,6 @@ from djangoldp.models import Model
 
 from data_food_consortium.enums import ResourceImportSource, WebhookEventSource
 from data_food_consortium.models import RevokeWebhookRecord
-from data_food_consortium.models_common import DataServer
 from data_food_consortium.proxy.resource import ProxyRefreshParser, ResourceServerClient
 
 
@@ -17,11 +16,11 @@ class WebhookEventType(StrEnum):
 
 
 class WebhookProcessor:
-    data_server_urlid = None
+    data_server = None
     data = None
 
-    def __init__(self, data_server_urlid, data):
-        self.data_server_urlid = data_server_urlid
+    def __init__(self, data_server, data):
+        self.data_server = data_server
         self.data = data
 
     def process_update(self):
@@ -32,7 +31,7 @@ class WebhookProcessor:
         )
 
     def process_refresh(self):
-        host = urlparse(self.data_server_urlid)
+        host = urlparse(self.data_server.urlid)
         ResourceServerClient(
             f"{host.scheme}://{host.netloc}/", ResourceImportSource.REFRESH_WEBHOOK
         ).request_scope(self.data["scope"])
@@ -44,9 +43,7 @@ class WebhookProcessor:
             ).delete()
         if settings.DFC_STORE_IMPORT_REPORTS:
             RevokeWebhookRecord.objects.create(
-                data=self.data,
-                data_server=DataServer.objects.get(self.data_server_urlid),
-                source=source,
+                data=self.data, data_server=self.data_server, source=source
             )
 
     def process(self, source: WebhookEventSource = WebhookEventSource.DATASERVER):

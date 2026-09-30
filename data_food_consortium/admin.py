@@ -211,7 +211,7 @@ class ResourceImportRecordAdmin(admin.ModelAdmin):
 @admin.action(description="Retry webhook")
 def retry_webhook(modeladmin, request, queryset):
     for record in queryset:
-        WebhookProcessor(record.data_server.urlid, record.data).process(
+        WebhookProcessor(record.data_server, record.data).process(
             WebhookEventSource.ADMIN_SITE
         )
 
