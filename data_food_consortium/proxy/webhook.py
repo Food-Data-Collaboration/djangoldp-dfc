@@ -6,6 +6,7 @@ from djangoldp.models import Model
 
 from data_food_consortium.enums import ResourceImportSource, WebhookEventSource
 from data_food_consortium.models import RevokeWebhookRecord
+from data_food_consortium.models_common import DataServer
 from data_food_consortium.proxy.resource import ProxyRefreshParser, ResourceServerClient
 
 
@@ -43,7 +44,9 @@ class WebhookProcessor:
             ).delete()
         if settings.DFC_STORE_IMPORT_REPORTS:
             RevokeWebhookRecord.objects.create(
-                data=self.data, data_server_urlid=self.data_server_urlid, source=source
+                data=self.data,
+                data_server=DataServer.objects.get(self.data_server_urlid),
+                source=source,
             )
 
     def process(self, source: WebhookEventSource = WebhookEventSource.DATASERVER):

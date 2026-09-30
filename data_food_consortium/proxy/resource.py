@@ -416,7 +416,7 @@ class ProxyRefreshParser:
             ResourceImportRecord.objects.create(
                 import_started_at=self.import_started_at,
                 data_batches=self.data_batches,
-                data_server_source=self.data_server_source,
+                data_server=self.data_server,
                 imported_models="\n".join([str(m) for m in self.imported_models]),
                 imported_subjects="\n".join(self.imported_subjects),
                 deleted_subjects="\n".join(self.deleted_subjects),
@@ -470,11 +470,10 @@ class ResourceServerClient:
         logger.error(msg)
 
         # Create database record.
-        data_server_source = Model.get_or_create(DataServer, self.dataserver_url)
         if settings.DFC_STORE_IMPORT_REPORTS is not False:  # True, or "error"
             ResourceImportRecord.objects.create(
                 import_started_at=self.parser.import_started_at,
-                data_server_source=data_server_source,
+                data_server=Model.get_or_create(DataServer, self.dataserver_url),
                 data_batches=self.parser.data_batches,
                 source=self.source,
                 error_type=failure_kind,

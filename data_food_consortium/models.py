@@ -999,7 +999,7 @@ class ResourceImportRecord(models.Model):
         null=True,
         help_text="A list of the JSON data received from the data-server, received in batches",
     )
-    data_server_source = fields.TextField(blank=True, null=True)
+    data_server = fields.ForeignKey(DataServer, on_delete=models.CASCADE)
     imported_models = fields.TextField(
         blank=True,
         null=True,
@@ -1033,7 +1033,7 @@ class ResourceImportRecord(models.Model):
     error_message = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.data_server_source} ({self.import_started_at})"
+        return f"{self.data_server} ({self.import_started_at})"
 
     def save(self, *args, **kwargs):
         self.successful = self.error_type is None and (
@@ -1056,8 +1056,10 @@ class RevokeWebhookRecord(models.Model):
     data = fields.JSONField(
         blank=True, null=True, help_text="The JSON data sent with the webhook"
     )
-    data_server_urlid = fields.TextField(
-        blank=True, null=True, help_text="The platform which sent the webhook"
+    data_server = fields.ForeignKey(
+        DataServer,
+        on_delete=models.CASCADE,
+        help_text="The data server which sent the webhook",
     )
     source = fields.CharField(
         choices=WebhookEventSource.choices,
@@ -1068,4 +1070,4 @@ class RevokeWebhookRecord(models.Model):
     )
 
     def __str__(self):
-        return f"{self.data_server_urlid} ({self.completed_at})"
+        return f"{self.data_server} ({self.completed_at})"

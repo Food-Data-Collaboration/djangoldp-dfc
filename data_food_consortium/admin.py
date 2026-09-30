@@ -197,27 +197,27 @@ def retry_import(modeladmin, request, queryset):
     for record in queryset:
         for data_batch in record.data_batches:
             ProxyRefreshParser(
-                record.data_server_source.urlid, ResourceImportSource.ADMIN_SITE
+                record.data_server.urlid, ResourceImportSource.ADMIN_SITE
             ).parse(data_batch)
 
 
 @admin.register(models.ResourceImportRecord)
 class ResourceImportRecordAdmin(admin.ModelAdmin):
     list_display = ["import_started_at", "source", "successful", "error_type"]
-    list_filter = ["source", "data_server_source", "successful", "error_type"]
+    list_filter = ["source", "data_server", "successful", "error_type"]
     actions = [retry_import]
 
 
 @admin.action(description="Retry webhook")
 def retry_webhook(modeladmin, request, queryset):
     for record in queryset:
-        WebhookProcessor(record.data_server_urlid, record.data).process(
+        WebhookProcessor(record.data_server.urlid, record.data).process(
             WebhookEventSource.ADMIN_SITE
         )
 
 
 @admin.register(models.RevokeWebhookRecord)
 class RevokeWebhookRecordAdmin(admin.ModelAdmin):
-    list_display = ["completed_at", "data_server_urlid", "source"]
+    list_display = ["completed_at", "data_server", "source"]
     list_filter = ["source"]
     actions = [retry_webhook]
