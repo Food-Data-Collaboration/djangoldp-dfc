@@ -32,9 +32,9 @@ class WebhookProcessor:
     def process_update(self):
         # Parse and import the graph.
         # TODO: trigger optional behaviour in the parser to fail loudly.
-        ProxyRefreshParser(self.data["@id"], ResourceImportSource.UPDATE_WEBHOOK).parse(
-            self.data
-        )
+        ProxyRefreshParser(
+            self.data_server.urlid, ResourceImportSource.UPDATE_WEBHOOK
+        ).parse(self.data)
 
     def process_refresh(self):
         host = urlparse(self.data_server.urlid)
