@@ -79,3 +79,33 @@ class TestWebhooks(TestCase):
         mock_authenticate.assert_called_once()
         self.assertEqual(response.data, {})
         self.assertEqual(Enterprise.objects.count(), 0)  # object has been deleted.
+
+    def test_webhook_revoke_others_resource(self, mock_authenticate):
+        """I cannot revoke a resource for which I am not the data owner"""
+        mock_authenticate.side_effect = auth_platform_side_effect(self.data_server)
+
+        enterprise = EnterpriseFactory(
+            data_server_source=DataServerFactory(urlid="https://somewherelese.com")
+        )
+        webhook_data = {
+            "@context": settings.LDP_RDF_CONTEXT,
+            "eventType": "revoke",
+            "objects": [
+                {
+                    "@id": enterprise.proxy_of,
+                    "@type": "dfc-b:Organization",
+                }
+            ],
+        }
+        response = self.client.post(
+            reverse("djangoldp-dfc-webhook"),
+            data=json.dumps(webhook_data),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 403)
+        mock_authenticate.assert_called_once()
+        self.assertEqual(
+            response.data,
+            {"error": "You can only modify resources from your own data server"},
+        )
+        self.assertEqual(Enterprise.objects.count(), 1)  # object has not been deleted.

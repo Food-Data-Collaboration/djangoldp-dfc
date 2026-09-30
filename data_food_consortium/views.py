@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 
 from data_food_consortium.filters import DFCGrantedPermissionsFilterBackend
 from data_food_consortium.forms import EnterpriseImportForm
+from data_food_consortium.proxy.errors import ResourceAnnexationError
 from data_food_consortium.proxy.keycloak import KeycloakResourceServerAuthentication
 from data_food_consortium.proxy.webhook import WebhookEventType, WebhookProcessor
 
@@ -28,8 +29,6 @@ class CacheWebhookView(APIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data
-        # TODO: respond 403 id the keycloak token is valid, but doesn't correspond to the host of the resource given in @id
-
         try:
             WebhookEventType(data["eventType"])
         except KeyError:
@@ -60,7 +59,14 @@ class CacheWebhookView(APIView):
                         },
                         status=400,
                     )
-        WebhookProcessor(request.data_server, data).process()
+
+        try:
+            WebhookProcessor(request.data_server, data).process()
+        except ResourceAnnexationError:
+            return Response(
+                {"error": "You can only modify resources from your own data server"},
+                status=403,
+            )
         return Response({}, status=200)
 
 
