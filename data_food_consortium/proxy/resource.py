@@ -19,6 +19,7 @@ from data_food_consortium.enums import (
 )
 from data_food_consortium.models import ResourceImportRecord
 from data_food_consortium.models_common import DataServer
+from data_food_consortium.proxy.errors import ResourceAnnexationError
 from data_food_consortium.proxy.keycloak import (
     KeycloakAuthenticationException,
     KeycloakClient,
@@ -197,6 +198,13 @@ class ProxyRefreshParser:
 
     def _recursively_force_data_server_source(self, value):
         if isinstance(value, dict):
+            if (
+                "proxy_of" in value
+                and not self.data_server_source.resource_within_domain(
+                    value["proxy_of"]
+                )
+            ):
+                raise ResourceAnnexationError()
             if "data_server_source" not in value:
                 value["data_server_source"] = self._serialize_data_server_source()
             for key in value:
