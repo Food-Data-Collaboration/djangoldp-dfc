@@ -51,6 +51,15 @@ class TestFiltersPermissioning(TestCase):
 
     @override_settings(DFC_USER_GRANTS_ENABLED=True)
     def test_filter_granted_enterprises(self):
+        # Set up two enterprises which I have permission to access, by a general grant.
+        enterprise_general_grant = EnterpriseFactory()
+        AssignedScope.objects.create(
+            data_server=enterprise_general_grant.data_server_source,
+            scope=PermissioningScope.READ_ENTERPRISE,
+            user=self.user,
+            proxied_obj_urlid="all",
+        )
+
         # Set up an enterprise which I do have permission to access, by specific grant.
         enterprise_granted_to_me = EnterpriseFactory()
         AssignedScope.objects.create(
@@ -77,6 +86,12 @@ class TestFiltersPermissioning(TestCase):
             user=self.user,
             proxied_obj_urlid=only_products_enterprise.proxy_of,
         )
+
+        # Set up an enterprise which I cannot access, from a known data server.
+        non_granted_enterprise = EnterpriseFactory(
+            data_server_source=enterprise_granted_to_my_platform.data_server_source
+        )
+        # and from an unacquianted data server.
         unknown_enterprise = EnterpriseFactory()
 
         # GET enterprises, test that the filters are applied.
@@ -85,12 +100,13 @@ class TestFiltersPermissioning(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         # Assert view has filtered out those without permission.
-        self.assertEqual(len(response.data["ldp:contains"]), 2)
+        self.assertEqual(len(response.data["ldp:contains"]), 3)
         serialized_urlids = {o["@id"] for o in response.data["ldp:contains"]}
         self.assertEqual(
             len(
                 serialized_urlids.difference(
                     {
+                        enterprise_general_grant.urlid,
                         enterprise_granted_to_me.urlid,
                         enterprise_granted_to_my_platform.urlid,
                     }
@@ -100,7 +116,9 @@ class TestFiltersPermissioning(TestCase):
         )
 
         # GET the test enterprises directly.
+        self._test_direct_resource_access(enterprise_general_grant, True)
         self._test_direct_resource_access(enterprise_granted_to_me, True)
         self._test_direct_resource_access(enterprise_granted_to_my_platform, True)
         self._test_direct_resource_access(only_products_enterprise, False)
+        self._test_direct_resource_access(non_granted_enterprise, False)
         self._test_direct_resource_access(unknown_enterprise, False)
