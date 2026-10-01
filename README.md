@@ -12,6 +12,8 @@ Platforms consume data which has been granted to it by a partner data-server, th
 
 By default, this package will display all data shared with the platform to any visitor. By setting `DFC_USER_GRANTS_ENABLED` to `True` (via your settings.yml), you can change this behaviour so that a request needs to be authenticated, and the user needs to have been granted access to the data by the data owner.
 
+If you are using user authentication, it is required that your user model includes a unique field, `urlid` (the user WebID). For this purpose, and for supporting authentication/OIDC, we recommend using the auth package, DjangoLDP-Account, with the user model `djangoldp_account.models.LDPUser`.
+
 ## Installation
 
 Add to your `dependencies` and `ldppackages` in `settings.yml`. Make sure that this package is installed before DjangoLDP-Account (if you are using it), or else the middleware settings may conflict.
