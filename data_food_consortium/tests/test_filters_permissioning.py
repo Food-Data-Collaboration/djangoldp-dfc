@@ -57,6 +57,7 @@ class TestFiltersPermissioning(TestCase):
             data_server=enterprise_granted_to_me.data_server_source,
             scope=PermissioningScope.READ_ENTERPRISE,
             user=self.user,
+            proxied_obj_urlid=enterprise_granted_to_me.proxy_of,
         )
 
         # Set up an enterprise which I have permission to access, by my platform.
@@ -65,14 +66,16 @@ class TestFiltersPermissioning(TestCase):
             data_server=enterprise_granted_to_my_platform.data_server_source,
             scope=PermissioningScope.READ_ENTERPRISE,
             platform=self.user_platform,
+            proxied_obj_urlid=enterprise_granted_to_my_platform.proxy_of,
         )
 
-        # Set up an enterprise which I do not have permission to access.
+        # Set up an enterprise which I have the wrong scope to access.
         only_products_enterprise = EnterpriseFactory()
         AssignedScope.objects.create(
             data_server=only_products_enterprise.data_server_source,
             scope=PermissioningScope.READ_PRODUCTS,
             user=self.user,
+            proxied_obj_urlid=only_products_enterprise.proxy_of,
         )
         unknown_enterprise = EnterpriseFactory()
 

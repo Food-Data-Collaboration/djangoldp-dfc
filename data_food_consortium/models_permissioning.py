@@ -68,7 +68,11 @@ class AssignedScope(Model):
             models.CheckConstraint(
                 check=(Q(platform__isnull=False) & Q(user__isnull=True))
                 | (Q(platform__isnull=True) & Q(user__isnull=False)),
-                name="assigned_to_exactly_one_object",
+                name="assigned_to_exactly_one_subject",
+            ),
+            models.CheckConstraint(
+                check=~(Q(proxied_obj_urlid__isnull=True) | Q(proxied_obj_urlid="")),
+                name="assigned_to_object",
             ),
         ]
 
