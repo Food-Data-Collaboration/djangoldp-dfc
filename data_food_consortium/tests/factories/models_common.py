@@ -4,7 +4,7 @@ from data_food_consortium.models_common import DataServer, Platform
 
 
 class AbstractPlatformFactory(factory.django.DjangoModelFactory):
-    urlid = factory.Sequence(lambda n: "https://staging.myserver.com/platforms/%d" % n)
+    urlid = factory.Sequence(lambda n: "https://staging.myserver%d.com" % n)
 
     class Meta:
         abstract = True
