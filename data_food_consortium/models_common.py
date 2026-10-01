@@ -1,16 +1,13 @@
-import urllib
-
 from djangoldp.models import LDPModelManager, Model
 
-from data_food_consortium.auth_utils import resource_domain
+from data_food_consortium.auth_utils import normalise_to_domain, resource_domain
 
 
 class DataServerManager(LDPModelManager):
     def get(self, *args, **kwargs):
         # Avoid duplicate platform hosts with different paths.
         if "urlid" in kwargs:
-            urlid = urllib.parse.urlparse(kwargs["urlid"])
-            kwargs["urlid"] = f"{urlid.scheme}://{urlid.netloc}"
+            kwargs["urlid"] = normalise_to_domain(kwargs["urlid"])
         return super().get(*args, **kwargs)
 
 
