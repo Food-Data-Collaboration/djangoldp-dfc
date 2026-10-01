@@ -58,6 +58,9 @@ class AssignedScope(Model):
         related_name="assigned_scopes",
         help_text="A scope can be assigned to an individual user",
     )
+    proxied_obj_urlid = fields.TextField(
+        help_text="The urlid of the object upon which the scope is granted. Set to 'all', the user can access all objects"
+    )
     objects = AssignedScopeModelManager()
 
     class Meta(Model.Meta):
