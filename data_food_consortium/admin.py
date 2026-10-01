@@ -216,8 +216,9 @@ def retry_webhook(modeladmin, request, queryset):
         )
 
 
+@admin.register(models.GrantWebhookRecord)
 @admin.register(models.RevokeWebhookRecord)
-class RevokeWebhookRecordAdmin(admin.ModelAdmin):
+class WebhookRecordAdmin(admin.ModelAdmin):
     list_display = ["completed_at", "data_server", "source"]
     list_filter = ["source"]
     actions = [retry_webhook]

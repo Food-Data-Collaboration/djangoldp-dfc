@@ -1051,7 +1051,7 @@ class ResourceImportRecord(models.Model):
         return result
 
 
-class RevokeWebhookRecord(models.Model):
+class AbstractWebhookRecord(models.Model):
     completed_at = models.DateTimeField(auto_now_add=True)
     data = fields.JSONField(
         blank=True, null=True, help_text="The JSON data sent with the webhook"
@@ -1069,5 +1069,16 @@ class RevokeWebhookRecord(models.Model):
         help_text="How the webhook was triggered",
     )
 
+    class Meta:
+        abstract = True
+
     def __str__(self):
         return f"{self.data_server} ({self.completed_at})"
+
+
+class GrantWebhookRecord(AbstractWebhookRecord):
+    pass
+
+
+class RevokeWebhookRecord(AbstractWebhookRecord):
+    pass
