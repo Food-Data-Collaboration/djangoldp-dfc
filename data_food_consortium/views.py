@@ -36,8 +36,29 @@ class CacheWebhookView(APIView):
         except ValueError:
             return Response({"error": "Unrecognised event type"}, status=400)
 
-        # Cleaning webhook POST data.
-        if data["eventType"] == WebhookEventType.REFRESH:
+        if data["eventType"] == WebhookEventType.GRANT:
+            if "platform" not in data and "user" not in data:
+                return Response(
+                    {"error": "either platform or user web-id needed to grant access"},
+                    status=400,
+                )
+            elif "user" in data and not settings.DFC_USER_GRANTS_ENABLED:
+                return Response(
+                    {
+                        "error": "this platform is not configured to grant access to individual users"
+                    },
+                    status=400,
+                )
+            if "scopes" not in data:
+                return Response({"error": "scopes is a required parameter"}, status=400)
+            if "objects" not in data or not len(data["objects"]):
+                return Response(
+                    {
+                        "error": "objects, containing at least one object is required to grant access"
+                    },
+                    status=400,
+                )
+        elif data["eventType"] == WebhookEventType.REFRESH:
             if "enterpriseUrlid" not in data:
                 return Response(
                     {"error": "enterpriseUrlid is a required parameter"}, status=400
