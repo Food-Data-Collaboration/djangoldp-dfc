@@ -163,6 +163,8 @@ class TestWebhooks(TestCase):
 
         platform = PlatformFactory()
         enterprise = EnterpriseFactory(data_server_source=self.data_server)
+        # Add an enterprise which the subject is not granted access to.
+        EnterpriseFactory(data_server_source=self.data_server)
 
         scopes = [
             PermissioningScope.READ_ENTERPRISE,
@@ -192,8 +194,13 @@ class TestWebhooks(TestCase):
         # Scopes created.
         self._assert_expected_scopes(scopes, platform=platform)
 
-        # No enterprise has been created or modified.
-        self.assertEqual(Enterprise.objects.get().name, enterprise.name)
+        # Scopes are not created for enterprises not subject to grant.
+        self.assertEqual(
+            AssignedScope.objects.exclude(
+                proxied_obj_urlid=enterprise.proxy_of
+            ).count(),
+            0,
+        )
 
         # Re-submitting the webhook does not create duplicate grants.
         response = self.client.post(
@@ -220,6 +227,8 @@ class TestWebhooks(TestCase):
 
         self.setUpExternalUser()
         enterprise = EnterpriseFactory(data_server_source=self.data_server)
+        # Add an enterprise which the subject is not granted access to.
+        EnterpriseFactory(data_server_source=self.data_server)
 
         scopes = [
             PermissioningScope.READ_ENTERPRISE,
@@ -249,8 +258,13 @@ class TestWebhooks(TestCase):
         # Scopes created.
         self._assert_expected_scopes(scopes, user=self.user)
 
-        # No enterprise has been created or modified.
-        self.assertEqual(Enterprise.objects.get().name, enterprise.name)
+        # Scopes are not created for enterprises not subject to grant.
+        self.assertEqual(
+            AssignedScope.objects.exclude(
+                proxied_obj_urlid=enterprise.proxy_of
+            ).count(),
+            0,
+        )
 
         # Re-submitting the webhook does not create duplicate grants.
         response = self.client.post(

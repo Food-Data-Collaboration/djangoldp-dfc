@@ -34,13 +34,17 @@ class WebhookProcessor:
         self.data_server = data_server
         self.data = data
 
-    def _process_grant(self, model, field_name):
+    def _process_grant(self, model, field_name, proxied_obj_urlid):
         """
         :param model: either server's user model or Platform. Must have urlid field.
         :param field_name: corresponds both to webhook data key and to field on AssignedScope. 'platform' or 'user'.
         """
         subject = model.objects.get_or_create(urlid=self.data[field_name])[0]
-        scope_kwargs = {"data_server": self.data_server, field_name: subject}
+        scope_kwargs = {
+            "data_server": self.data_server,
+            field_name: subject,
+            "proxied_obj_urlid": proxied_obj_urlid,
+        }
         # Delete pre-existing scopes.
         AssignedScope.objects.filter(**scope_kwargs).delete()
 
@@ -51,13 +55,18 @@ class WebhookProcessor:
             instance.save()
 
     def process_grant(self, source):
+        for obj in self.data["objects"]:
+            if not self.data_server.resource_within_domain(obj["@id"]):
+                raise ResourceAnnexationError()
+
         with transaction.atomic():
-            # Delete pre-existing scopes.
             if "platform" in self.data:
                 self.data["platform"] = normalise_to_domain(self.data["platform"])
-                self._process_grant(Platform, "platform")
+                for obj in self.data["objects"]:
+                    self._process_grant(Platform, "platform", obj["@id"])
             if "user" in self.data and settings.DFC_USER_GRANTS_ENABLED:
-                self._process_grant(get_user_model(), "user")
+                for obj in self.data["objects"]:
+                    self._process_grant(get_user_model(), "user", obj["@id"])
 
         if settings.DFC_STORE_IMPORT_REPORTS:
             GrantWebhookRecord.objects.create(
