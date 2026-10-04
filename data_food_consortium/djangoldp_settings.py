@@ -18,7 +18,7 @@ DFC_STORE_IMPORT_REPORTS = True
 # Defines the default read scopes, if not overridden during the Discovery mechanism.
 # TODO: ReadOrders and ReadProducts aren't implemented on the staging data-server, but should be included.
 # TODO: Scopes could be configured per-dataserver by using the DataServer model.
-DFC_KEYCLOAK_READ_SCOPES = {"ReadEnterprise": "enterprises/"}
+DFC_KEYCLOAK_READ_SCOPES = {"ReadEnterprise": "organizations/"}
 DFC_REQUESTED_SCOPES_DOCUMENT = (
     "https://cdn.startinblox.com/owl/dfc/taxonomies/cqcm.jsonld"
 )
