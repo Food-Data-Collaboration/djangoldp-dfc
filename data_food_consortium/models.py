@@ -178,6 +178,7 @@ class Organization(AbstractAgent):
             "coordinations",
             "customer_categories",
             "shipping_options",
+            "template_sale_sessions",
         ]
         nested_fields = [
             "addresses",
@@ -188,6 +189,7 @@ class Organization(AbstractAgent):
             "services",
             "coordinations",
             "shipping_options",
+            "template_sale_sessions",
         ]
         disable_url = True  # Disables DjangoLDP auto-url generation
         dfc_read_scope = PermissioningScope.READ_ENTERPRISE
@@ -791,6 +793,8 @@ class PhysicalPlace(AbstractDFCModel):
             "main_contact",
             "phone_number",
             "URL",
+            "sale_sessions",
+            "template_sale_sessions",
         ]
         dfc_read_scope = PermissioningScope.READ_ORDERS
         dfc_write_scope = PermissioningScope.WRITE_ORDERS
@@ -899,6 +903,44 @@ class SaleSession(AbstractDFCModel):
 
     def __str__(self):
         return f"{self.coordination} ({self.start_date} - {self.end_date})"
+
+
+class TemplateSaleSession(AbstractDFCModel):
+    organization = fields.ForeignKey(
+        Organization,
+        rdf_type="dfc-b:isTemplateSaleSessionOf",
+        related_rdf_type="dfc-b:hasTemplateSaleSession",
+        blank=True,
+        null=True,
+        related_name="template_sale_sessions",
+        on_delete=models.CASCADE,
+    )
+    hosted_at = fields.ForeignKey(
+        PhysicalPlace,
+        rdf_type="dfc-b:hostedAt",
+        # TODO: dfc-b:hosts should serve both SaleSession and TemplateSaleSession objects.
+        #  this is currently not supported in DjangoLDP
+        # related_rdf_type="dfc-b:hosts",
+        blank=True,
+        null=True,
+        related_name="template_sale_sessions",
+        on_delete=models.SET_NULL,
+    )
+
+    class Meta:
+        rdf_type = "dfc-b:TemplateSaleSession"
+        serializer_fields = [
+            "@id",
+            "proxy_of",
+            "data_server_source",
+            "organization",
+            "hosted_at",
+        ]
+        dfc_read_scope = PermissioningScope.READ_ORDERS
+        dfc_write_scope = PermissioningScope.WRITE_ORDERS
+
+    def __str__(self):
+        return f"TemplateSaleSession {self.id} ({self.organization})"
 
 
 class ShippingOption(AbstractDFCModel):

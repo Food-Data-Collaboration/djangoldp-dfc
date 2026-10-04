@@ -35,6 +35,7 @@ urlpatterns = [
                 "services",
                 "coordinations",
                 "shipping_options",
+                "template_sale_sessions",
             ],
         ),
         name="organizations_view",
