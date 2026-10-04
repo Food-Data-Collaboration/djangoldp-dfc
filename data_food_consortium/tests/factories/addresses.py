@@ -2,7 +2,7 @@ import random
 
 import factory
 
-from data_food_consortium.models import EnterpriseAddress
+from data_food_consortium.models import OrganizationAddress
 from data_food_consortium.tests.factories.models_common import AbstractDFCFactory
 
 
@@ -23,10 +23,10 @@ class AbstractAddressFactory(AbstractDFCFactory):
         abstract = True
 
 
-class EnterpriseAddressFactory(AbstractAddressFactory):
+class OrganizationAddressFactory(AbstractAddressFactory):
     address_of = factory.SubFactory(
-        "data_food_consortium.tests.factories.EnterpriseFactory"
+        "data_food_consortium.tests.factories.OrganizationFactory"
     )
 
     class Meta:
-        model = EnterpriseAddress
+        model = OrganizationAddress

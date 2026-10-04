@@ -1,12 +1,12 @@
 import factory
 
-from data_food_consortium.models import Enterprise
+from data_food_consortium.models import Organization
 from data_food_consortium.tests.factories.models_common import AbstractDFCFactory
 
 
-class EnterpriseFactory(AbstractDFCFactory):
+class OrganizationFactory(AbstractDFCFactory):
     urlid = factory.Sequence(
-        lambda n: "https://staging.myserver.com/enterprises/%d" % n
+        lambda n: "https://staging.myserver.com/organizations/%d" % n
     )
     enterpriseid = factory.SelfAttribute("urlid")
     email = factory.LazyAttributeSequence(
@@ -21,4 +21,4 @@ class EnterpriseFactory(AbstractDFCFactory):
     VATstatus = True
 
     class Meta:
-        model = Enterprise
+        model = Organization

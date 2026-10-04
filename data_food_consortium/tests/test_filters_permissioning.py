@@ -4,11 +4,11 @@ from rest_framework.test import APIClient
 
 from data_food_consortium.auth_utils import user_oidc_provider
 from data_food_consortium.enums import PermissioningScope
-from data_food_consortium.models import Enterprise
+from data_food_consortium.models import Organization
 from data_food_consortium.models_permissioning import AssignedScope
 from data_food_consortium.tests.factories import (
     DFCUserFactory,
-    EnterpriseFactory,
+    OrganizationFactory,
     PlatformFactory,
 )
 
@@ -35,68 +35,68 @@ class TestFiltersPermissioning(TestCase):
         By default, DFC_USER_GRANTS_ENABLED is False. This test ensures that it correctly disables
         filtering by granted permissions.
         """
-        enterprise = (
-            EnterpriseFactory()
+        org = (
+            OrganizationFactory()
         )  # I have not been granted specific permissions to access.
 
         response = self.client.get(
-            Model.resource(Enterprise), content_type="application/ld+json"
+            Model.resource(Organization), content_type="application/ld+json"
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data["ldp:contains"]), 1)
-        assert response.data["ldp:contains"][0]["@id"] == enterprise.urlid
+        assert response.data["ldp:contains"][0]["@id"] == org.urlid
 
-        # GET the test enterprises directly.
-        self._test_direct_resource_access(enterprise, True)
+        # GET the test organizations directly.
+        self._test_direct_resource_access(org, True)
 
     @override_settings(DFC_USER_GRANTS_ENABLED=True)
-    def test_filter_granted_enterprises(self):
-        # Set up two enterprises which I have permission to access, by a general grant.
-        enterprise_general_grant = EnterpriseFactory()
+    def test_filter_granted_organizations(self):
+        # Set up two organizations which I have permission to access, by a general grant.
+        org_general_grant = OrganizationFactory()
         AssignedScope.objects.create(
-            data_server=enterprise_general_grant.data_server_source,
+            data_server=org_general_grant.data_server_source,
             scope=PermissioningScope.READ_ENTERPRISE,
             user=self.user,
             proxied_obj_urlid="all",
         )
 
-        # Set up an enterprise which I do have permission to access, by specific grant.
-        enterprise_granted_to_me = EnterpriseFactory()
+        # Set up an organizations which I do have permission to access, by specific grant.
+        org_granted_to_me = OrganizationFactory()
         AssignedScope.objects.create(
-            data_server=enterprise_granted_to_me.data_server_source,
+            data_server=org_granted_to_me.data_server_source,
             scope=PermissioningScope.READ_ENTERPRISE,
             user=self.user,
-            proxied_obj_urlid=enterprise_granted_to_me.proxy_of,
+            proxied_obj_urlid=org_granted_to_me.proxy_of,
         )
 
-        # Set up an enterprise which I have permission to access, by my platform.
-        enterprise_granted_to_my_platform = EnterpriseFactory()
+        # Set up an organization which I have permission to access, by my platform.
+        org_granted_to_my_platform = OrganizationFactory()
         AssignedScope.objects.create(
-            data_server=enterprise_granted_to_my_platform.data_server_source,
+            data_server=org_granted_to_my_platform.data_server_source,
             scope=PermissioningScope.READ_ENTERPRISE,
             platform=self.user_platform,
-            proxied_obj_urlid=enterprise_granted_to_my_platform.proxy_of,
+            proxied_obj_urlid=org_granted_to_my_platform.proxy_of,
         )
 
-        # Set up an enterprise which I have the wrong scope to access.
-        only_products_enterprise = EnterpriseFactory()
+        # Set up an organization which I have the wrong scope to access.
+        only_products_org = OrganizationFactory()
         AssignedScope.objects.create(
-            data_server=only_products_enterprise.data_server_source,
+            data_server=only_products_org.data_server_source,
             scope=PermissioningScope.READ_PRODUCTS,
             user=self.user,
-            proxied_obj_urlid=only_products_enterprise.proxy_of,
+            proxied_obj_urlid=only_products_org.proxy_of,
         )
 
-        # Set up an enterprise which I cannot access, from a known data server.
-        non_granted_enterprise = EnterpriseFactory(
-            data_server_source=enterprise_granted_to_my_platform.data_server_source
+        # Set up an organization which I cannot access, from a known data server.
+        non_granted_org = OrganizationFactory(
+            data_server_source=org_granted_to_my_platform.data_server_source
         )
         # and from an unacquianted data server.
-        unknown_enterprise = EnterpriseFactory()
+        unknown_org = OrganizationFactory()
 
-        # GET enterprises, test that the filters are applied.
+        # GET organizations, test that the filters are applied.
         response = self.client.get(
-            Model.resource(Enterprise), content_type="application/ld+json"
+            Model.resource(Organization), content_type="application/ld+json"
         )
         self.assertEqual(response.status_code, 200)
         # Assert view has filtered out those without permission.
@@ -106,19 +106,19 @@ class TestFiltersPermissioning(TestCase):
             len(
                 serialized_urlids.difference(
                     {
-                        enterprise_general_grant.urlid,
-                        enterprise_granted_to_me.urlid,
-                        enterprise_granted_to_my_platform.urlid,
+                        org_general_grant.urlid,
+                        org_granted_to_me.urlid,
+                        org_granted_to_my_platform.urlid,
                     }
                 )
             ),
             0,
         )
 
-        # GET the test enterprises directly.
-        self._test_direct_resource_access(enterprise_general_grant, True)
-        self._test_direct_resource_access(enterprise_granted_to_me, True)
-        self._test_direct_resource_access(enterprise_granted_to_my_platform, True)
-        self._test_direct_resource_access(only_products_enterprise, False)
-        self._test_direct_resource_access(non_granted_enterprise, False)
-        self._test_direct_resource_access(unknown_enterprise, False)
+        # GET the test organizations directly.
+        self._test_direct_resource_access(org_general_grant, True)
+        self._test_direct_resource_access(org_granted_to_me, True)
+        self._test_direct_resource_access(org_granted_to_my_platform, True)
+        self._test_direct_resource_access(only_products_org, False)
+        self._test_direct_resource_access(non_granted_org, False)
+        self._test_direct_resource_access(unknown_org, False)
