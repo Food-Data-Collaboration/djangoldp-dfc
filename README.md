@@ -70,7 +70,7 @@ A Postman collection has been created to accompany these docs which provides exa
 The webhook is called when one of three things happens:
 1. a resource which the proxy has access to has been created or updated. In this case, the data-server should POST the serialization of the object to the webhook directly, using the `eventType` `"update"`. A PUT operation will be performed with the data given.
 2. a resource which the proxy has access to has been deleted or permission to the object has been revoked. In this case, the data-server should POST the `@id` and `@type` of each resource _revoked_ in a list under the key `objects`. It should use the `eventType` `"revoke"`.
-3. the proxy has had a scope permission given or revoked on the data-server (for a given organization). In this case, the `eventType` should be `"refresh"`. The `enterpriseUrlid` should be the `@id` of the organization which granted/revoked their data.
+3. the proxy has had a scope permission given or revoked on the data-server (for a given organization). In this case, the `eventType` should be `"refresh"`. The `organizationUrlid` should be the `@id` of the organization which granted/revoked their data.
 
 In all cases, the endpoint on the proxy server is `/djangoldp-dfc/webhook/`, and the request type is POST. Webhook requests MUST be authenticated, using a valid Keycloak client from the `KEYCLOAK_URL` and `KEYCLOAK_REALM`.
 

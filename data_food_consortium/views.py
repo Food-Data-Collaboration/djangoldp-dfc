@@ -59,10 +59,14 @@ class CacheWebhookView(APIView):
                     status=400,
                 )
         elif data["eventType"] == WebhookEventType.REFRESH:
-            if "enterpriseUrlid" not in data:
-                return Response(
-                    {"error": "enterpriseUrlid is a required parameter"}, status=400
-                )
+            if "organizationUrlid" not in data:
+                # enterpriseUrlid is deprecated
+                if "enterpriseUrlid" not in data:
+                    return Response(
+                        {"error": "organizationUrlid is a required parameter"},
+                        status=400,
+                    )
+                data["organizationUrlid"] = data["enterpriseUrlid"]
             if "scope" not in data:
                 return Response({"error": "scope is a required parameter"}, status=400)
             if validators.url(data["scope"]):
