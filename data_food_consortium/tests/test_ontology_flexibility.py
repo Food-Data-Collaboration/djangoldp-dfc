@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from data_food_consortium.models import Enterprise
+from data_food_consortium.models import Organization
 from data_food_consortium.utils import get_serializer_class
 
 
@@ -17,11 +17,11 @@ class TestOntologyFlexibility(TestCase):
         )
         self.client.force_authenticate(self.user)
 
-    def test_enterprise_ontology_v1(self):
+    def test_organization_ontology_v1(self):
         """Can POST data in ontology v1, receive it in V2"""
         data = {
             "@context": settings.LDP_RDF_CONTEXT_V1,
-            "@type": "dfc-b:Enterprise",
+            "@type": "dfc-b:Organization",
             "dfc-b:name": "Fred's Farm",
             "dfc-b:hasAddress": {
                 "@type": "ldp:Container",
@@ -39,7 +39,7 @@ class TestOntologyFlexibility(TestCase):
         }
         v1_address = copy.deepcopy(data["dfc-b:hasAddress"]["ldp:contains"][0])
 
-        serializer = get_serializer_class(Enterprise)(data=data)
+        serializer = get_serializer_class(Organization)(data=data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
 

@@ -12,7 +12,7 @@ class LDPSerializerDFC(LDPSerializer):
     pass
 
 
-class EnterpriseSerializer(LDPSerializerDFC):
+class OrganizationSerializer(LDPSerializerDFC):
     description = StrippedHTMLCharField(
         allow_blank=True, allow_null=True, required=False
     )

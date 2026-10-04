@@ -107,7 +107,7 @@ class AbstractAgent(AbstractDFCModel):
         abstract = True
 
 
-class Enterprise(AbstractAgent):
+class Organization(AbstractAgent):
     enterpriseid = fields.LDPUrlField(
         rdf_type="dfc-b:enterpriseID",
         blank=True,
@@ -138,15 +138,15 @@ class Enterprise(AbstractAgent):
         blank=True,
         null=True,
         help_text=(
-            "Any Tax Registration Number that is applicable to the Enterprise, "
-            "in the jurisdiction the Enterprise is operating in."
+            "Any Tax Registration Number that is applicable to the entity, "
+            "in the jurisdiction the entity is operating in."
         ),
     )  # xsd:String
     VATstatus = fields.BooleanField(
         rdf_type="dfc-b:VATStatus",
         default=False,
         null=True,
-        help_text="Indicates whether the Enterprise charges VAT or not",
+        help_text="Indicates whether the entity charges VAT or not",
     )  # xsd:Boolean
 
     class Meta(AbstractAgent.Meta):
@@ -205,14 +205,14 @@ class Enterprise(AbstractAgent):
 
     @classmethod
     def serializer_class(cls):
-        from data_food_consortium.serializers import EnterpriseSerializer
+        from data_food_consortium.serializers import OrganizationSerializer
 
-        return EnterpriseSerializer
+        return OrganizationSerializer
 
 
-class EnterpriseAddress(AbstractAddress):
+class OrganizationAddress(AbstractAddress):
     address_of = fields.ForeignKey(
-        Enterprise,
+        Organization,
         related_rdf_type="dfc-b:hasAddress",
         rdf_type="dfc-b:addressOf",
         blank=True,
@@ -235,7 +235,7 @@ class EnterpriseAddress(AbstractAddress):
             "region",
             "street",
         ]
-        container_path = "enterprise_addresses"
+        container_path = "organization_addresses"
         dfc_read_scope = PermissioningScope.READ_ENTERPRISE
         dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
@@ -244,8 +244,8 @@ class EnterpriseAddress(AbstractAddress):
 
 
 class SocialMedia(AbstractDFCModel):
-    enterprise = fields.ForeignKey(
-        Enterprise,
+    organization = fields.ForeignKey(
+        Organization,
         rdf_type="dfc-b:socialMediaOf",
         related_rdf_type="dfc-b:hasSocialMedia",
         blank=True,
@@ -272,12 +272,12 @@ class SocialMedia(AbstractDFCModel):
         dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
-        return f"{self.enterprise}: {self.name}"
+        return f"{self.organization}: {self.name}"
 
 
 class Person(AbstractAgent):
     affiliates = fields.ForeignKey(
-        Enterprise,
+        Organization,
         rdf_type="dfc-b:affiliates",
         related_rdf_type="dfc-b:affiliatedTo",
         blank=True,
@@ -295,7 +295,7 @@ class Person(AbstractAgent):
         blank=True,
         null=True,
     )
-    # TODO: a person can be the dfc-b:mainContactOf an Enterprise or a PhysicalPlace.
+    # TODO: a person can be the dfc-b:mainContactOf an Organization or a PhysicalPlace.
     # This will need to be a generic foreign key (ManyToMany)
 
     class Meta:
@@ -437,7 +437,7 @@ class SuppliedProduct(AbstractProduct):
     """
 
     supplied_by = fields.ForeignKey(
-        Enterprise,
+        Organization,
         rdf_type="dfc-b:suppliedBy",
         related_rdf_type="dfc-b:supplies",
         blank=True,
@@ -511,7 +511,7 @@ class CatalogItem(AbstractDFCModel):
     """
 
     managed_by = fields.ForeignKey(
-        Enterprise,
+        Organization,
         related_rdf_type="dfc-b:manages",
         rdf_type="dfc-b:managedBy",
         blank=True,
@@ -571,7 +571,7 @@ class CustomerCategory(AbstractDFCModel):
         null=True,
     )
     defined_by = fields.ForeignKey(
-        Enterprise,
+        Organization,
         related_rdf_type="dfc-b:defines",
         rdf_type="dfc-b:definedBy",
         blank=True,
@@ -658,7 +658,7 @@ class Offer(AbstractDFCModel):
 
 class Service(AbstractDFCModel):
     """
-    Represents a service that can be provided by an Enterprise, like "home delivery".
+    Represents a service that can be provided by an Organization, like "home delivery".
 
     NOTE: This model isn't currently a part of the DFC standard, and was added early
     for the CQCM use-case. To reflect this, it uses the CQCM namespace for now. When it is
@@ -689,9 +689,9 @@ class Service(AbstractDFCModel):
         return self.name
 
 
-class EnterpriseService(AbstractDFCModel):
-    enterprise = fields.ForeignKey(
-        Enterprise,
+class OrganizationService(AbstractDFCModel):
+    organization = fields.ForeignKey(
+        Organization,
         rdf_type="dfc-b:suppliedBy",
         related_rdf_type="cqcm:services",
         blank=True,
@@ -710,7 +710,7 @@ class EnterpriseService(AbstractDFCModel):
     )
 
     class Meta:
-        rdf_type = "cqcm:EnterpriseService"
+        rdf_type = "cqcm:OrganizationService"
         serializer_fields = [
             "@id",
             "proxy_of",
@@ -719,12 +719,13 @@ class EnterpriseService(AbstractDFCModel):
             "updated_at",
             "service",
         ]
-        container_path = "enterprise_services"
+
+        container_path = "organization_services"
         dfc_read_scope = PermissioningScope.READ_ENTERPRISE
         dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
-        return f"{self.service.name} ({self.enterprise})"
+        return f"{self.service.name} ({self.organization})"
 
 
 class PhysicalPlaceAddress(AbstractAddress):
@@ -809,8 +810,8 @@ class Coordination(AbstractDFCModel):
         blank=True,
         null=True,
     )
-    enterprise = fields.ForeignKey(
-        Enterprise,
+    organization = fields.ForeignKey(
+        Organization,
         rdf_type="dfc-b:coordinates",
         related_rdf_type="dfc-b:coordinatedBy",
         blank=True,
@@ -818,8 +819,8 @@ class Coordination(AbstractDFCModel):
         related_name="coordinations",
         on_delete=models.CASCADE,
         help_text=(
-            "Confirms the Enterprise Coordinates certain SaleSessions, "
-            "and defines margin percentage that the Enterprise takes for managing the SaleSession"
+            "Confirms the entity Coordinates certain SaleSessions, "
+            "and defines margin percentage that the entity takes for managing the SaleSession"
         ),
     )
     margin_percent = fields.FloatField(
@@ -828,7 +829,7 @@ class Coordination(AbstractDFCModel):
         rdf_type="dfc-b:marginPercent",
         default=0.0,
         help_text=(
-            "The percentage margin the coordinating Enterprise is charging as comission "
+            "The percentage margin the coordinating entity is charging as comission "
             "for managing the Sales Session (from 0-100)"
         ),
     )
@@ -848,19 +849,19 @@ class Coordination(AbstractDFCModel):
         dfc_write_scope = PermissioningScope.WRITE_ORDERS
 
     def __str__(self):
-        return f"{self.name} ({self.enterprise})"
+        return f"{self.name} ({self.organization})"
 
 
 class SaleSession(AbstractDFCModel):
     """
-    Time bounded grouping of Offers for an Enterprise.
+    Time bounded grouping of Offers for an Organization.
     """
 
     coordination = fields.ForeignKey(
         Coordination,
         rdf_type="dfc-b:objectOf",
         related_rdf_type="dfc-b:hasObject",
-        help_text="The Coordination (that defines which Enterprise coordinates the Sales Sesison)",
+        help_text="The Coordination (that defines which Organization coordinates the Sales Sesison)",
         blank=True,
         null=True,
         related_name="sale_sessions",
@@ -905,15 +906,15 @@ class ShippingOption(AbstractDFCModel):
     Pick-up options and Delivery options are available to the customer of a SaleSession.
     """
 
-    enterprise = fields.ForeignKey(
-        Enterprise,
+    organization = fields.ForeignKey(
+        Organization,
         rdf_type="cqcm:optionOf",
         related_rdf_type="cqcm:shippingOptions",
         blank=True,
         null=True,
         related_name="shipping_options",
         on_delete=models.CASCADE,
-        help_text="Automatically set to the enterprise coordinating the SaleSession. Not part of the DFC standard",
+        help_text="Automatically set to the entity coordinating the SaleSession. Not part of the DFC standard",
     )
     sale_session = fields.ForeignKey(
         SaleSession,
@@ -980,9 +981,9 @@ class ShippingOption(AbstractDFCModel):
         if (
             self.sale_session
             and self.sale_session.coordination
-            and self.sale_session.coordination.enterprise
+            and self.sale_session.coordination.organization
         ):
-            self.enterprise = self.sale_session.coordination.enterprise
+            self.organization = self.sale_session.coordination.organization
         return super().save(*args, **kwargs)
 
 

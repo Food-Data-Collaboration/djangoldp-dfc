@@ -1,10 +1,11 @@
 from django.urls import path
+from django.views.generic.base import RedirectView
 
-from .models import Enterprise, Person, SuppliedProduct
+from .models import Organization, Person, SuppliedProduct
 from .views import (
     CacheWebhookView,
-    EnterpriseImportView,
-    EnterpriseViewset,
+    OrganizationImportView,
+    OrganizationViewset,
     PersonViewset,
     ProxyWebIDView,
     SuppliedProductViewset,
@@ -12,16 +13,21 @@ from .views import (
 
 urlpatterns = [
     path("profile", ProxyWebIDView.as_view()),
-    path("dfc/enterprise-import/", EnterpriseImportView.as_view(), name="csv_import"),
+    path("dfc/import/", OrganizationImportView.as_view(), name="csv_import"),
+    path(
+        "dfc/enterprise-import/",
+        RedirectView.as_view(pattern_name="csv_import"),
+        name="enterprise_import",
+    ),
     path(
         "djangoldp-dfc/webhook/",
         CacheWebhookView.as_view(),
         name="djangoldp-dfc-webhook",
     ),
     path(
-        "enterprises/",
-        EnterpriseViewset.urls(
-            model=Enterprise,
+        "organizations/",
+        OrganizationViewset.urls(
+            model=Organization,
             nested_fields=[
                 "supplied_products",
                 "social_medias",
@@ -31,7 +37,9 @@ urlpatterns = [
                 "shipping_options",
             ],
         ),
+        name="organizations_view",
     ),
+    path("enterprises/", RedirectView.as_view(pattern_name="organization-list")),
     path("persons/", PersonViewset.urls(model=Person)),
     path(
         "supplied_products/",

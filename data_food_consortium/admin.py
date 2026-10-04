@@ -35,13 +35,13 @@ class DFCModelAdmin(DjangoLDPAdmin):
         return getattr(field, "rdf_type", field.verbose_name)
 
 
-@admin.register(models.Enterprise)
-class EnterpriseAdmin(DFCModelAdmin):
+@admin.register(models.Organization)
+class OrganizationAdmin(DFCModelAdmin):
     search_fields = ["urlid", "proxy_of", "name", "phone_number"]
 
 
-@admin.register(models.EnterpriseAddress)
-class EnterpriseAddressAdmin(DFCModelAdmin):
+@admin.register(models.OrganizationAddress)
+class OrganizationAddressAdmin(DFCModelAdmin):
     search_fields = [
         "urlid",
         "proxy_of",
@@ -62,9 +62,9 @@ class SocialMediaAdmin(DFCModelAdmin):
         "urlid",
         "proxy_of",
         "url",
-        "enterprise__urlid",
-        "enterprise__name",
-        "enterprise__proxy_of",
+        "organization__urlid",
+        "organization__name",
+        "organization__proxy_of",
     ]
 
 
@@ -86,19 +86,19 @@ class ServiceAdmin(DFCModelAdmin):
     list_display = ["name"]
 
 
-@admin.register(models.EnterpriseService)
-class EnterpriseServiceAdmin(DFCModelAdmin):
+@admin.register(models.OrganizationService)
+class OrganizationServiceAdmin(DFCModelAdmin):
     search_fields = [
         "urlid",
         "proxy_of",
         "service__name",
         "service__urlid",
-        "enterprise__name",
-        "enterprise__urlid",
-        "enterprise__proxy_of",
+        "organization__name",
+        "organization__urlid",
+        "organization__proxy_of",
     ]
-    list_display = ["enterprise", "service"]
-    raw_id_fields = ["enterprise"]
+    list_display = ["organization", "service"]
+    raw_id_fields = ["organization"]
 
 
 @admin.register(models.SuppliedProduct)
@@ -171,12 +171,12 @@ class CoordinationAdmin(DFCModelAdmin):
         "urlid",
         "proxy_of",
         "name",
-        "enterprise__name",
-        "enterprise__urlid",
-        "enterprise__proxy_of",
+        "organization__name",
+        "organization__urlid",
+        "organization__proxy_of",
     ]
-    list_display = ["urlid", "name", "enterprise"]
-    raw_id_fields = ["enterprise"]
+    list_display = ["urlid", "name", "organization"]
+    raw_id_fields = ["organization"]
 
 
 @admin.register(models.SaleSession)

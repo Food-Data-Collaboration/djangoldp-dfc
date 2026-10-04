@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from data_food_consortium.filters import DFCGrantedPermissionsFilterBackend
-from data_food_consortium.forms import EnterpriseImportForm
+from data_food_consortium.forms import OrganizationImportForm
 from data_food_consortium.proxy.errors import ResourceAnnexationError
 from data_food_consortium.proxy.keycloak import KeycloakResourceServerAuthentication
 from data_food_consortium.proxy.webhook import WebhookEventType, WebhookProcessor
@@ -59,10 +59,14 @@ class CacheWebhookView(APIView):
                     status=400,
                 )
         elif data["eventType"] == WebhookEventType.REFRESH:
-            if "enterpriseUrlid" not in data:
-                return Response(
-                    {"error": "enterpriseUrlid is a required parameter"}, status=400
-                )
+            if "organizationUrlid" not in data:
+                # enterpriseUrlid is deprecated
+                if "enterpriseUrlid" not in data:
+                    return Response(
+                        {"error": "organizationUrlid is a required parameter"},
+                        status=400,
+                    )
+                data["organizationUrlid"] = data["enterpriseUrlid"]
             if "scope" not in data:
                 return Response({"error": "scope is a required parameter"}, status=400)
             if validators.url(data["scope"]):
@@ -91,14 +95,12 @@ class CacheWebhookView(APIView):
         return Response({}, status=200)
 
 
-class EnterpriseImportView(BaseCSVImportView):
+class OrganizationImportView(BaseCSVImportView):
     def get_form_class(self, *args, **kwargs):
-        return EnterpriseImportForm(*args, **kwargs)
+        return OrganizationImportForm(*args, **kwargs)
 
     def render_import(self, request, form, success=False):
-        return render(
-            request, "enterprise_import.html", {"form": form, "success": success}
-        )
+        return render(request, "csv_import.html", {"form": form, "success": success})
 
     def get(self, request, *args, **kwargs):
         return self.render_import(request, self.get_form_class())
@@ -116,7 +118,7 @@ class EnterpriseImportView(BaseCSVImportView):
         return self.render_import(request, form, success=True)
 
 
-class EnterpriseViewset(LDPViewSet):
+class OrganizationViewset(LDPViewSet):
     filter_backends = [
         DFCGrantedPermissionsFilterBackend,
         SearchByQueryParamFilterBackend,
