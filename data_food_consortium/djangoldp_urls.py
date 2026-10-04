@@ -39,7 +39,7 @@ urlpatterns = [
         ),
         name="organizations_view",
     ),
-    path("enterprises/", RedirectView.as_view(pattern_name="organizations_view")),
+    path("enterprises/", RedirectView.as_view(pattern_name="organization-list")),
     path("persons/", PersonViewset.urls(model=Person)),
     path(
         "supplied_products/",
