@@ -4,7 +4,9 @@ from djangoldp.models import Model
 from rdflib import Graph
 
 from data_food_consortium.enums import (
+    PermissioningScope,
     ProductType,
+    ResourceImportFailure,
     ResourceImportSource,
     ShippingOptionType,
     WebhookEventSource,
@@ -17,7 +19,7 @@ class AbstractDFCModel(Model):
     updated_at = models.DateTimeField(auto_now=True)
     data_server_source = fields.ForeignKey(
         DataServer,
-        on_delete=models.RESTRICT,
+        on_delete=models.CASCADE,
         help_text="The dataserver which provided the instance",
         blank=True,
         null=True,
@@ -188,6 +190,8 @@ class Organization(AbstractAgent):
             "shipping_options",
         ]
         disable_url = True  # Disables DjangoLDP auto-url generation
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
         return self.urlid
@@ -232,6 +236,8 @@ class OrganizationAddress(AbstractAddress):
             "street",
         ]
         container_path = "organization_addresses"
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
         return f"{self.address_of} address"
@@ -262,6 +268,8 @@ class SocialMedia(AbstractDFCModel):
         rdf_type = "dfc-b:SocialMedia"
         serializer_fields = ["@id", "proxy_of", "data_server_source", "name", "url"]
         container_path = "social_medias"
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
         return f"{self.organization}: {self.name}"
@@ -306,6 +314,8 @@ class Person(AbstractAgent):
             "places",
         ]
         nested_fields = ["affiliates", "places"]
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
@@ -410,6 +420,8 @@ class AbstractProduct(AbstractDFCModel):
     class Meta:
         abstract = True
         rdf_type = "dfc-b:DefinedProduct"
+        dfc_read_scope = PermissioningScope.READ_PRODUCTS
+        dfc_write_scope = PermissioningScope.WRITE_PRODUCTS
 
     @classmethod
     def serializer_class(cls):
@@ -486,6 +498,8 @@ class LocalizedProduct(AbstractDFCModel):
         rdf_type = "dfc-b:LocalizedProduct"
         serializer_fields = ["@id", "proxy_of", "data_server_source", "reference_of"]
         disable_url = True  # Disables DjangoLDP auto-url generation
+        dfc_read_scope = PermissioningScope.READ_PRODUCTS
+        dfc_write_scope = PermissioningScope.WRITE_PRODUCTS
 
     def __str__(self):
         return f"Localized {self.reference_of}"
@@ -543,6 +557,8 @@ class CatalogItem(AbstractDFCModel):
         ]
         nested_fields = ["offers"]
         container_path = "catalog_items"
+        dfc_read_scope = PermissioningScope.READ_PRODUCTS
+        dfc_write_scope = PermissioningScope.WRITE_PRODUCTS
 
     def __str__(self):
         return f"CatalogItem {self.references} ({self.managed_by})"
@@ -569,6 +585,8 @@ class CustomerCategory(AbstractDFCModel):
         serializer_fields = ["@id", "proxy_of", "data_server_source", "name", "offers"]
         nested_fields = ["offers"]
         container_path = "customer_categories"
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
         return f"CatalogItem {self.id}"
@@ -588,6 +606,8 @@ class Price(AbstractDFCModel):
             "value",
             "has_unit",
         ]
+        dfc_read_scope = PermissioningScope.READ_PRODUCTS
+        dfc_write_scope = PermissioningScope.WRITE_PRODUCTS
 
     def __str__(self):
         return f"Price {self.value} ({self.has_unit})"
@@ -629,6 +649,8 @@ class Offer(AbstractDFCModel):
     class Meta:
         rdf_type = "dfc-b:Offer"
         serializer_fields = ["@id", "proxy_of", "data_server_source", "offered_for"]
+        dfc_read_scope = PermissioningScope.READ_PRODUCTS
+        dfc_write_scope = PermissioningScope.WRITE_PRODUCTS
 
     def __str__(self):
         return f"Offer of {self.offers} to {self.offered_to} for {self.offered_for}"
@@ -660,6 +682,8 @@ class Service(AbstractDFCModel):
             "name",
         ]
         nested_fields = ["suppliers"]
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
         return self.name
@@ -695,7 +719,10 @@ class OrganizationService(AbstractDFCModel):
             "updated_at",
             "service",
         ]
+
         container_path = "organization_services"
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
 
     def __str__(self):
         return f"{self.service.name} ({self.organization})"
@@ -716,6 +743,8 @@ class PhysicalPlaceAddress(AbstractAddress):
             "region",
             "street",
         ]
+        dfc_read_scope = PermissioningScope.READ_ORDERS
+        dfc_write_scope = PermissioningScope.WRITE_ORDERS
 
     def __str__(self):
         return self.urlid
@@ -763,6 +792,8 @@ class PhysicalPlace(AbstractDFCModel):
             "phone_number",
             "URL",
         ]
+        dfc_read_scope = PermissioningScope.READ_ORDERS
+        dfc_write_scope = PermissioningScope.WRITE_ORDERS
 
     def __str__(self):
         return self.name if self.name and len(self.name) else str(self.address)
@@ -814,6 +845,8 @@ class Coordination(AbstractDFCModel):
             "sale_sessions",
         ]
         nested_fields = ["sale_sessions"]
+        dfc_read_scope = PermissioningScope.READ_ORDERS
+        dfc_write_scope = PermissioningScope.WRITE_ORDERS
 
     def __str__(self):
         return f"{self.name} ({self.organization})"
@@ -861,6 +894,8 @@ class SaleSession(AbstractDFCModel):
             "shipping_options",
         ]
         nested_fields = ["shipping_options"]
+        dfc_read_scope = PermissioningScope.READ_ORDERS
+        dfc_write_scope = PermissioningScope.WRITE_ORDERS
 
     def __str__(self):
         return f"{self.coordination} ({self.start_date} - {self.end_date})"
@@ -936,6 +971,8 @@ class ShippingOption(AbstractDFCModel):
             "delivers_at",
             "picked_up_at",
         ]
+        dfc_read_scope = PermissioningScope.READ_ORDERS
+        dfc_write_scope = PermissioningScope.WRITE_ORDERS
 
     def __str__(self):
         return f"{self.urlid} ({self.sale_session})"
@@ -963,7 +1000,7 @@ class ResourceImportRecord(models.Model):
         null=True,
         help_text="A list of the JSON data received from the data-server, received in batches",
     )
-    data_server_source = fields.TextField(blank=True, null=True)
+    data_server = fields.ForeignKey(DataServer, on_delete=models.CASCADE)
     imported_models = fields.TextField(
         blank=True,
         null=True,
@@ -984,9 +1021,26 @@ class ResourceImportRecord(models.Model):
         max_length=64,
         help_text="How the import was triggered (e.g. via the command line or webhook)",
     )
+    successful = models.BooleanField(
+        default=True, help_text="Set automatically on save based on the error fields"
+    )
+    error_type = models.CharField(
+        choices=ResourceImportFailure.choices,
+        blank=True,
+        null=True,
+        max_length=64,
+        help_text="Null if there was no failure; otherwise, the category of failure",
+    )
+    error_message = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.data_server_source} ({self.import_started_at})"
+        return f"{self.data_server} ({self.import_started_at})"
+
+    def save(self, *args, **kwargs):
+        self.successful = self.error_type is None and (
+            self.error_message is None or not len(self.error_message)
+        )
+        super().save(*args, **kwargs)
 
     @property
     def parsed_data(self):
@@ -998,13 +1052,15 @@ class ResourceImportRecord(models.Model):
         return result
 
 
-class RevokeWebhookRecord(models.Model):
+class AbstractWebhookRecord(models.Model):
     completed_at = models.DateTimeField(auto_now_add=True)
     data = fields.JSONField(
         blank=True, null=True, help_text="The JSON data sent with the webhook"
     )
-    platform_urlid = fields.TextField(
-        blank=True, null=True, help_text="The platform which sent the webhook"
+    data_server = fields.ForeignKey(
+        DataServer,
+        on_delete=models.CASCADE,
+        help_text="The data server which sent the webhook",
     )
     source = fields.CharField(
         choices=WebhookEventSource.choices,
@@ -1014,5 +1070,16 @@ class RevokeWebhookRecord(models.Model):
         help_text="How the webhook was triggered",
     )
 
+    class Meta:
+        abstract = True
+
     def __str__(self):
-        return f"{self.platform_urlid} ({self.completed_at})"
+        return f"{self.data_server} ({self.completed_at})"
+
+
+class GrantWebhookRecord(AbstractWebhookRecord):
+    pass
+
+
+class RevokeWebhookRecord(AbstractWebhookRecord):
+    pass

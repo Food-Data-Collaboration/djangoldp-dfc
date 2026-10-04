@@ -1,14 +1,22 @@
 # Data Food Consortium Proxy Application
 
-The objective of this package is to provide DjangoLDP applications with all of the tools they need to run a Data Food Consortium (DFC) Proxy.
+The objective of this package is to provide DjangoLDP applications with all of the tools they need to run a Data Food Consortium (DFC) Plaform.
+
+## Core Features
+
+The [DjangoLDP](https://git.startinblox.com/djangoldp-packages/djangoldp) model definitions provide an implementation of the v2 of the [core DFC ontologies](https://github.com/datafoodconsortium/standard/tree/master). Models using this package are also capable of accepting v1 DFC data as input. The resulting viewset is able to perform CRUD operations on the ontology data, parsed and serialized in JSON-LD.
+
+### User Authentication and Permissioning
+
+Platforms consume data which has been granted to it by a partner data-server, the producer of data. The Platform behaves as a custodian of that data, sharing information publicly which has been granted to do so, and sharing it with individual authenticated users, when it has been allowed to do so.
+
+By default, this package will display all data shared with the platform to any visitor. By setting `DFC_USER_GRANTS_ENABLED` to `True` (via your settings.yml), you can change this behaviour so that a request needs to be authenticated, and the user needs to have been granted access to the data by the data owner.
+
+If you are using user authentication, it is required that your user model includes a unique field, `urlid` (the user WebID). For this purpose, and for supporting authentication/OIDC, we recommend using the auth package, DjangoLDP-Account, with the user model `djangoldp_account.models.LDPUser`.
 
 ## Installation
 
 Add to your `dependencies` and `ldppackages` in `settings.yml`. Make sure that this package is installed before DjangoLDP-Account (if you are using it), or else the middleware settings may conflict.
-
-## Automated updates of live data
-
-The model definitions provide a full implementation of the [DFC business ontology](https://raw.githubusercontent.com/datafoodconsortium/ontology/refs/heads/master/src/DFC_BusinessOntology.owl). The resulting viewset is able to perform CRUD operations on the ontology data, parsed and serialized in JSON-LD.
 
 ##  Access to live data
 
@@ -24,7 +32,7 @@ To use live data with your application you will need to configure Keycloak. Befo
 
 To configure dataservers in the federation, create and configure an instance of the model `DataServer` for each. You can do this via the Django admin site, at `/admin/data_food_consortium/dataserver/`.
 
-By default cache refreshes and refresh webhooks will create records in the database about the import for debugging purposes. This can be disabled by changing the setting `DFC_STORE_IMPORT_REPORTS` to `False`.
+By default cache refreshes and refresh webhooks will create records in the database about the import for debugging purposes. This can be disabled by changing the setting `DFC_STORE_IMPORT_REPORTS` to `False`, or to `"error"`, for logging errors only.
 
 To test your configuration and initialise data from the configured dataservers, please run the command `python manage.py refresh_from_cache`.
 

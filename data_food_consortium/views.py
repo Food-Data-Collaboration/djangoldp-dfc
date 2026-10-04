@@ -11,7 +11,9 @@ from djangoldp_csv.views import BaseCSVImportView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from data_food_consortium.filters import DFCGrantedPermissionsFilterBackend
 from data_food_consortium.forms import OrganizationImportForm
+from data_food_consortium.proxy.errors import ResourceAnnexationError
 from data_food_consortium.proxy.keycloak import KeycloakResourceServerAuthentication
 from data_food_consortium.proxy.webhook import WebhookEventType, WebhookProcessor
 
@@ -27,8 +29,6 @@ class CacheWebhookView(APIView):
 
     def post(self, request, *args, **kwargs):
         data = request.data
-        # TODO: respond 403 id the keycloak token is valid, but doesn't correspond to the host of the resource given in @id
-
         try:
             WebhookEventType(data["eventType"])
         except KeyError:
@@ -36,8 +36,29 @@ class CacheWebhookView(APIView):
         except ValueError:
             return Response({"error": "Unrecognised event type"}, status=400)
 
-        # Cleaning webhook POST data.
-        if data["eventType"] == WebhookEventType.REFRESH:
+        if data["eventType"] == WebhookEventType.GRANT:
+            if "platform" not in data and "user" not in data:
+                return Response(
+                    {"error": "either platform or user web-id needed to grant access"},
+                    status=400,
+                )
+            elif "user" in data and not settings.DFC_USER_GRANTS_ENABLED:
+                return Response(
+                    {
+                        "error": "this platform is not configured to grant access to individual users"
+                    },
+                    status=400,
+                )
+            if "scopes" not in data:
+                return Response({"error": "scopes is a required parameter"}, status=400)
+            if "objects" not in data or not len(data["objects"]):
+                return Response(
+                    {
+                        "error": "objects, containing at least one object is required to grant access"
+                    },
+                    status=400,
+                )
+        elif data["eventType"] == WebhookEventType.REFRESH:
             if "enterpriseUrlid" not in data:
                 return Response(
                     {"error": "enterpriseUrlid is a required parameter"}, status=400
@@ -60,7 +81,13 @@ class CacheWebhookView(APIView):
                         status=400,
                     )
 
-        WebhookProcessor(request.platform.urlid, data).process()
+        try:
+            WebhookProcessor(request.data_server, data).process()
+        except ResourceAnnexationError:
+            return Response(
+                {"error": "You can only modify resources from your own data server"},
+                status=403,
+            )
         return Response({}, status=200)
 
 
@@ -88,21 +115,28 @@ class OrganizationImportView(BaseCSVImportView):
 
 
 class OrganizationViewset(LDPViewSet):
-    filter_backends = [SearchByQueryParamFilterBackend]
+    filter_backends = [
+        DFCGrantedPermissionsFilterBackend,
+        SearchByQueryParamFilterBackend,
+    ]
 
 
 class PersonViewset(LDPViewSet):
-    filter_backends = [SearchByQueryParamFilterBackend]
+    filter_backends = [
+        DFCGrantedPermissionsFilterBackend,
+        SearchByQueryParamFilterBackend,
+    ]
 
 
 class SuppliedProductViewset(LDPViewSet):
-    filter_backends = [SearchByQueryParamFilterBackend]
+    filter_backends = [
+        DFCGrantedPermissionsFilterBackend,
+        SearchByQueryParamFilterBackend,
+    ]
 
 
 class ProxyWebIDView(InstanceWebIDView):
     def get_profile_data(self, request):
         profile_data = super().get_profile_data(request)
-        profile_data["dfc-t:requestedScopes"] = (
-            "https://cdn.startinblox.com/owl/dfc/taxonomies/cqcm.jsonld"
-        )
+        profile_data["dfc-t:requestedScopes"] = settings.DFC_REQUESTED_SCOPES_DOCUMENT
         return profile_data

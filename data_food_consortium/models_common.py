@@ -1,4 +1,14 @@
-from djangoldp.models import Model
+from djangoldp.models import LDPModelManager, Model
+
+from data_food_consortium.auth_utils import normalise_to_domain, resource_domain
+
+
+class DataServerManager(LDPModelManager):
+    def get(self, *args, **kwargs):
+        # Avoid duplicate platform hosts with different paths.
+        if "urlid" in kwargs:
+            kwargs["urlid"] = normalise_to_domain(kwargs["urlid"])
+        return super().get(*args, **kwargs)
 
 
 class AbstractPlatform(Model):
@@ -17,8 +27,13 @@ class DataServer(AbstractPlatform):
     A data source, which granted a platform access to some data.
     """
 
+    objects = DataServerManager()
+
     def __str__(self):
         return self.urlid
+
+    def resource_within_domain(self, resource_urlid):
+        return resource_domain(self.urlid) == resource_domain(resource_urlid)
 
 
 class Platform(AbstractPlatform):

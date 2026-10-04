@@ -2,10 +2,26 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from djangoldp import fields
-from djangoldp.models import Model
+from djangoldp.models import LDPModelManager, Model
 
+from data_food_consortium.auth_utils import user_oidc_provider
 from data_food_consortium.enums import PermissioningScope
 from data_food_consortium.models_common import DataServer, Platform
+
+
+class AssignedScopeQuerySet(models.QuerySet):
+    def for_user(self, user):
+        # Filter by those given to the user as an individual and by virtue of the user's platform.
+        platform = Platform.objects.get_or_create(urlid=user_oidc_provider(user))[0]
+        return self.filter(Q(platform=platform) | Q(user=user))
+
+
+class AssignedScopeModelManager(LDPModelManager):
+    def get_queryset(self):
+        return AssignedScopeQuerySet(self.model, using=self._db)
+
+    def for_user(self, user):
+        return self.get_queryset().for_user()
 
 
 class AssignedScope(Model):
@@ -42,13 +58,21 @@ class AssignedScope(Model):
         related_name="assigned_scopes",
         help_text="A scope can be assigned to an individual user",
     )
+    proxied_obj_urlid = fields.TextField(
+        help_text="The urlid of the object upon which the scope is granted. Set to 'all', the user can access all objects"
+    )
+    objects = AssignedScopeModelManager()
 
     class Meta(Model.Meta):
         constraints = [
             models.CheckConstraint(
                 check=(Q(platform__isnull=False) & Q(user__isnull=True))
                 | (Q(platform__isnull=True) & Q(user__isnull=False)),
-                name="assigned_to_exactly_one_object",
+                name="assigned_to_exactly_one_subject",
+            ),
+            models.CheckConstraint(
+                check=~(Q(proxied_obj_urlid__isnull=True) | Q(proxied_obj_urlid="")),
+                name="assigned_to_object",
             ),
         ]
 

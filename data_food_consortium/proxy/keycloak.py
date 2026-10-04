@@ -1,13 +1,14 @@
 import os
 
 import requests
+import validators
 from authlib.jose import jwt as authlib_jwt
 from authlib.jose.errors import JoseError
 from django.conf import settings
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from data_food_consortium.models_common import Platform
+from data_food_consortium.models_common import DataServer
 
 
 def keycloak_is_configured():
@@ -71,6 +72,7 @@ class KeycloakResourceServerAuthentication(BaseAuthentication):
             claims_options={
                 "aud": {"essential": True, "value": "account"},
                 "client_id": {"essential": True},
+                "webid": {"essential": False},
             },
         )
         claims.validate()
@@ -83,17 +85,26 @@ class KeycloakResourceServerAuthentication(BaseAuthentication):
 
         try:
             claims = self.get_valid_claims(token.split(" ")[1])
-            platform_urlid = claims["client_id"]
+            # Try to fallback to client ID for backwards compatibility (if valid URL).
+            data_server_urlid = (
+                claims["webid"] if "webid" in claims else claims["client_id"]
+            )
+            if not validators.url(data_server_urlid):
+                raise ValueError()
         except JoseError:
             raise AuthenticationFailed("Invalid token")
         except KeyError:
-            raise AuthenticationFailed("Missing claim, client_id")
+            raise AuthenticationFailed("Missing required claim: webid, or client_id")
+        except ValueError:
+            raise AuthenticationFailed(
+                "Missing claim webid and client_id is not a webid"
+            )
 
         try:
-            request.platform = Platform.objects.get(urlid=platform_urlid)
-        except Platform.DoesNotExist:
+            request.data_server = DataServer.objects.get(urlid=data_server_urlid)
+        except DataServer.DoesNotExist:
             # TODO: allow for different failure strategies: admin notification and open registration.
             # Allowing open registration here would only award the user access to public resources.
             raise AuthenticationFailed(
-                f"Platform {platform_urlid} is not federated with this server"
+                f"Data Server {data_server_urlid} is not federated with this server"
             )
