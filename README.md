@@ -46,12 +46,12 @@ All scopes of the spec are defined by [this document](https://cdn.startinblox.co
 * `WriteProducts`
 * `WriteEnterprise`
 
-For each Read scope that you wish to support (i.e. from Products, Orders and Organizations/Enterprises), you will need to create a GET endpoint to retrieve the associated information, serialized into JSON-LD with the classes and properties from the DFC standard. These endpoints should be authenticated with Keycloak, and only resources granted to the platform/proxy server should be returned to it, once authenticated. For more information consult the data permissioning specification associated to this network.
+For each Read scope that you wish to support (i.e. from Products, Orders and Organizations (Enterprises)), you will need to create a GET endpoint to retrieve the associated information, serialized into JSON-LD with the classes and properties from the DFC standard. These endpoints should be authenticated with Keycloak, and only resources granted to the platform/proxy server should be returned to it, once authenticated. For more information consult the data permissioning specification associated to this network.
 
 Optionally expose a view with your endpoint configurations at `/.well-known/dfc/`, a view which accepts a GET request and responds with a JSON document like so:
 ```json
 {
-    "https://github.com/datafoodconsortium/taxonomies/releases/latest/download/scopes.rdf#ReadEnterprise": "/enterprises/",
+    "https://github.com/datafoodconsortium/taxonomies/releases/latest/download/scopes.rdf#ReadEnterprise": "/organizations/",
     "https://github.com/datafoodconsortium/taxonomies/releases/latest/download/scopes.rdf#ReadProducts": "/supplied_products/",
     "https://github.com/datafoodconsortium/taxonomies/releases/latest/download/scopes.rdf#ReadOrders": "/orders/"
 }
@@ -59,7 +59,7 @@ Optionally expose a view with your endpoint configurations at `/.well-known/dfc/
 
 If the resource server receives a 404 when requesting the above `.well-known` document, it will presume the default configuration is available, defined in the JSON structure above. The document defines the endpoints where data associated to a scope can be found (the configuration on ReadEnterprise defines where the resource server can retrieve instances of `dfc-b:Organization`.)
 
-It's a good idea to paginate your data if there's a lot of it. If you include in the response the key `next`, the cache refresh will follow this link to continue importing data until `next` is not returned or is returned with the value `null`. Hence you can configure ReadEnterprise to use the url `https://myserver.com/enterprises/?limit=10`, responding in the body `next: https://myserver.com/enterprises/?limit=10&offset=10`. This example is inspired by the method of pagination known as limit-offset, supported by Django Rest Framework and DjangoLDP.
+It's a good idea to paginate your data if there's a lot of it. If you include in the response the key `next`, the cache refresh will follow this link to continue importing data until `next` is not returned or is returned with the value `null`. Hence you can configure ReadEnterprise to use the url `https://myserver.com/organizations/?limit=10`, responding in the body `next: https://myserver.com/organizations/?limit=10&offset=10`. This example is inspired by the method of pagination known as limit-offset, supported by Django Rest Framework and DjangoLDP.
 
 ### Automated updates of live data via webhook
 
