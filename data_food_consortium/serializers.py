@@ -1,5 +1,5 @@
 from django.template.defaultfilters import striptags
-from djangoldp.serializers import LDPSerializer
+from djangoldp_open_world_model.serializers import OpenWorldLDPSerializer
 from rest_framework import fields, serializers
 
 
@@ -8,7 +8,7 @@ class StrippedHTMLCharField(fields.CharField):
         return striptags(super().to_internal_value(data))
 
 
-class LDPSerializerDFC(LDPSerializer):
+class LDPSerializerDFC(OpenWorldLDPSerializer):
     pass
 
 

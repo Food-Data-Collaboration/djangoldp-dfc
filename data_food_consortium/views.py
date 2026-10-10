@@ -4,10 +4,10 @@ import validators
 from django.conf import settings
 from django.shortcuts import render
 from djangoldp.filters import SearchByQueryParamFilterBackend
-from djangoldp.views.ldp_viewset import LDPViewSet
 from djangoldp.views.webid import InstanceWebIDView
 from djangoldp_csv.errors import FieldParsingError
 from djangoldp_csv.views import BaseCSVImportView
+from djangoldp_open_world_model.views import OpenWorldLDPViewSet
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -118,21 +118,21 @@ class OrganizationImportView(BaseCSVImportView):
         return self.render_import(request, form, success=True)
 
 
-class OrganizationViewset(LDPViewSet):
+class OrganizationViewset(OpenWorldLDPViewSet):
     filter_backends = [
         DFCGrantedPermissionsFilterBackend,
         SearchByQueryParamFilterBackend,
     ]
 
 
-class PersonViewset(LDPViewSet):
+class PersonViewset(OpenWorldLDPViewSet):
     filter_backends = [
         DFCGrantedPermissionsFilterBackend,
         SearchByQueryParamFilterBackend,
     ]
 
 
-class SuppliedProductViewset(LDPViewSet):
+class SuppliedProductViewset(OpenWorldLDPViewSet):
     filter_backends = [
         DFCGrantedPermissionsFilterBackend,
         SearchByQueryParamFilterBackend,

@@ -1,6 +1,6 @@
 from django.db import models
 from djangoldp import fields
-from djangoldp.models import Model
+from djangoldp_open_world_model.models import OpenWorldModel
 from rdflib import Graph
 
 from data_food_consortium.enums import (
@@ -14,7 +14,7 @@ from data_food_consortium.enums import (
 from data_food_consortium.models_common import DataServer
 
 
-class AbstractDFCModel(Model):
+class AbstractDFCModel(OpenWorldModel):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     data_server_source = fields.ForeignKey(
@@ -27,9 +27,9 @@ class AbstractDFCModel(Model):
     )
     proxy_of = fields.TextField(rdf_type="dfc-t:proxyOf", blank=True, null=True)
 
-    class Meta(Model.Meta):
+    class Meta(OpenWorldModel.Meta):
         abstract = True
-        serializer_fields = ["@id"]
+        serializer_fields = ["@id", "additional"]
 
 
 class AbstractAddress(AbstractDFCModel):
