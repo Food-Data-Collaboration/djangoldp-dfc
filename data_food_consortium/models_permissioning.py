@@ -4,12 +4,18 @@ from django.db.models import Q
 from djangoldp import fields
 from djangoldp.models import LDPModelManager, Model
 
-from data_food_consortium.auth_utils import user_oidc_provider
+from data_food_consortium.auth_utils import (
+    get_required_scope_for_model,
+    user_oidc_provider,
+)
 from data_food_consortium.enums import PermissioningScope
 from data_food_consortium.models_common import DataServer, Platform
 
 
 class AssignedScopeQuerySet(models.QuerySet):
+    def for_model_scope(self, model):
+        return self.filter(scope=get_required_scope_for_model(model))
+
     def for_user(self, user):
         # Filter by those given to the user as an individual and by virtue of the user's platform.
         platform = Platform.objects.get_or_create(urlid=user_oidc_provider(user))[0]
@@ -19,6 +25,9 @@ class AssignedScopeQuerySet(models.QuerySet):
 class AssignedScopeModelManager(LDPModelManager):
     def get_queryset(self):
         return AssignedScopeQuerySet(self.model, using=self._db)
+
+    def for_model_scope(self, model):
+        return self.get_queryset().for_model_scope(model)
 
     def for_user(self, user):
         return self.get_queryset().for_user()

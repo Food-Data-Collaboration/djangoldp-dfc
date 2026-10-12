@@ -2,15 +2,12 @@ from django.conf import settings
 from django.db.models import Q
 from rest_framework.filters import BaseFilterBackend
 
-from data_food_consortium.auth_utils import get_required_scope_for_model
 from data_food_consortium.models_permissioning import AssignedScope
 
 
 class DFCGrantedPermissionsFilterBackend(BaseFilterBackend):
     def get_assigned_scopes_for_user(self, request, model):
-        return AssignedScope.objects.filter(
-            scope=get_required_scope_for_model(model)
-        ).for_user(request.user)
+        return AssignedScope.objects.for_model_scope(model).for_user(request.user)
 
     def filter_queryset(self, request, queryset, view):
         if not settings.DFC_USER_GRANTS_ENABLED:
