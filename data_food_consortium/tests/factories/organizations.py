@@ -1,13 +1,12 @@
 import factory
+from django.conf import settings
 
 from data_food_consortium.models import Organization
 from data_food_consortium.tests.factories.models_common import AbstractDFCFactory
 
 
 class OrganizationFactory(AbstractDFCFactory):
-    urlid = factory.Sequence(
-        lambda n: "https://staging.myserver.com/organizations/%d" % n
-    )
+    urlid = factory.Sequence(lambda n: "%s/organizations/%d" % (settings.SITE_URL, n))
     enterpriseid = factory.SelfAttribute("urlid")
     email = factory.LazyAttributeSequence(
         lambda o, n: "%d@%s%d.example.com" % (n, o.name.replace(" ", "_"), n)
