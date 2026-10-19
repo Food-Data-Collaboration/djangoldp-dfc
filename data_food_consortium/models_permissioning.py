@@ -21,6 +21,15 @@ class AssignedScopeQuerySet(models.QuerySet):
         platform = Platform.objects.get_or_create(urlid=user_oidc_provider(user))[0]
         return self.filter(Q(platform=platform) | Q(user=user))
 
+    def for_obj(self, obj):
+        """
+        Scopes granted to a specific object, directly or indirectly.
+        """
+        return self.filter(
+            Q(proxied_obj_urlid=obj.proxy_of)
+            | Q(Q(proxied_obj_urlid="all") & Q(data_server=obj.data_server_source))
+        )
+
 
 class AssignedScopeModelManager(LDPModelManager):
     def get_queryset(self):
