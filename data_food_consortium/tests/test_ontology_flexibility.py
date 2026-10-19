@@ -13,7 +13,10 @@ class TestOntologyFlexibility(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = get_user_model().objects.create_user(
-            username="john", email="jlennon@beatles.com", password="glass onion"
+            username="john",
+            email="jlennon@beatles.com",
+            password="glass onion",
+            is_superuser=True,
         )
         self.client.force_authenticate(self.user)
 

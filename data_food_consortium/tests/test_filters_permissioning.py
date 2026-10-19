@@ -10,13 +10,14 @@ from data_food_consortium.tests.factories import (
     DFCUserFactory,
     OrganizationFactory,
     PlatformFactory,
+    SuppliedProductFactory,
 )
 
 
 class TestFiltersPermissioning(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = DFCUserFactory()
+        self.user = DFCUserFactory(is_superuser=False)
         self.user_platform = PlatformFactory(urlid=user_oidc_provider(self.user))
         self.client.force_authenticate(self.user)
 
@@ -29,6 +30,7 @@ class TestFiltersPermissioning(TestCase):
             self.assertEqual(response.data["@id"], resource.urlid)
         else:
             self.assertEqual(response.status_code, 404)
+        return response
 
     def test_filter_disabled_by_setting(self):
         """
@@ -53,6 +55,11 @@ class TestFiltersPermissioning(TestCase):
     def test_filter_granted_organizations(self):
         # Set up two organizations which I have permission to access, by a general grant.
         org_general_grant = OrganizationFactory()
+        SuppliedProductFactory(
+            supplied_by=org_general_grant,
+            data_server_source=org_general_grant.data_server_source,
+            name="Organisation by general grant",
+        )
         AssignedScope.objects.create(
             data_server=org_general_grant.data_server_source,
             scope=PermissioningScope.READ_ENTERPRISE,
@@ -62,6 +69,11 @@ class TestFiltersPermissioning(TestCase):
 
         # Set up an organizations which I do have permission to access, by specific grant.
         org_granted_to_me = OrganizationFactory()
+        SuppliedProductFactory(
+            supplied_by=org_granted_to_me,
+            data_server_source=org_granted_to_me.data_server_source,
+            name="Organisation by specific grant",
+        )
         AssignedScope.objects.create(
             data_server=org_granted_to_me.data_server_source,
             scope=PermissioningScope.READ_ENTERPRISE,
@@ -71,6 +83,11 @@ class TestFiltersPermissioning(TestCase):
 
         # Set up an organization which I have permission to access, by my platform.
         org_granted_to_my_platform = OrganizationFactory()
+        SuppliedProductFactory(
+            supplied_by=org_granted_to_my_platform,
+            data_server_source=org_granted_to_my_platform.data_server_source,
+            name="Organisation by platform grant",
+        )
         AssignedScope.objects.create(
             data_server=org_granted_to_my_platform.data_server_source,
             scope=PermissioningScope.READ_ENTERPRISE,
@@ -80,19 +97,34 @@ class TestFiltersPermissioning(TestCase):
 
         # Set up an organization which I have the wrong scope to access.
         only_products_org = OrganizationFactory()
+        granted_product = SuppliedProductFactory(
+            supplied_by=only_products_org,
+            data_server_source=only_products_org.data_server_source,
+            name="Granted product",
+        )
         AssignedScope.objects.create(
             data_server=only_products_org.data_server_source,
             scope=PermissioningScope.READ_PRODUCTS,
             user=self.user,
-            proxied_obj_urlid=only_products_org.proxy_of,
+            proxied_obj_urlid=granted_product.proxy_of,
         )
 
         # Set up an organization which I cannot access, from a known data server.
         non_granted_org = OrganizationFactory(
             data_server_source=org_granted_to_my_platform.data_server_source
         )
+        SuppliedProductFactory(
+            supplied_by=non_granted_org,
+            data_server_source=org_granted_to_my_platform.data_server_source,
+            name="Non granted organisation",
+        )
         # and from an unacquianted data server.
         unknown_org = OrganizationFactory()
+        SuppliedProductFactory(
+            supplied_by=unknown_org,
+            data_server_source=unknown_org.data_server_source,
+            name="Product from third organisation",
+        )
 
         # GET organizations, test that the filters are applied.
         response = self.client.get(
@@ -122,3 +154,21 @@ class TestFiltersPermissioning(TestCase):
         self._test_direct_resource_access(only_products_org, False)
         self._test_direct_resource_access(non_granted_org, False)
         self._test_direct_resource_access(unknown_org, False)
+
+        # permissions on nested containers - products have not been granted.
+        for serialized_org in response.data["ldp:contains"]:
+            self.assertEqual(len(serialized_org["dfc-b:supplies"]["ldp:contains"]), 0)
+
+        # only the following organisation has granted both read enterprise and products.
+        AssignedScope.objects.create(
+            data_server=only_products_org.data_server_source,
+            scope=PermissioningScope.READ_ENTERPRISE,
+            user=self.user,
+            proxied_obj_urlid=only_products_org.proxy_of,
+        )
+        response = self._test_direct_resource_access(only_products_org, True)
+        supplied_product_serialization = response.data["dfc-b:supplies"]["ldp:contains"]
+        self.assertEqual(len(supplied_product_serialization), 1)
+        self.assertEqual(
+            supplied_product_serialization[0]["@id"], granted_product.urlid
+        )

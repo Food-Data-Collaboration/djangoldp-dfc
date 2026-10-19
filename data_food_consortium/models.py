@@ -12,6 +12,7 @@ from data_food_consortium.enums import (
     WebhookEventSource,
 )
 from data_food_consortium.models_common import DataServer
+from data_food_consortium.permissions import DFCPermission
 
 
 class AbstractDFCModel(OpenWorldModel):
@@ -29,6 +30,7 @@ class AbstractDFCModel(OpenWorldModel):
 
     class Meta(OpenWorldModel.Meta):
         abstract = True
+        permission_classes = [DFCPermission]
         serializer_fields = ["@id", "additional"]
 
 
@@ -300,7 +302,7 @@ class Person(AbstractAgent):
     # TODO: a person can be the dfc-b:mainContactOf an Organization or a PhysicalPlace.
     # This will need to be a generic foreign key (ManyToMany)
 
-    class Meta:
+    class Meta(AbstractAgent.Meta):
         rdf_type = "dfc-b:Person"
         serializer_fields = [
             "@id",
@@ -419,7 +421,7 @@ class AbstractProduct(AbstractDFCModel):
     # has_part_origin: PartOrigin
     # has_labelling_characteristic
 
-    class Meta:
+    class Meta(AbstractDFCModel.Meta):
         abstract = True
         rdf_type = "dfc-b:DefinedProduct"
         dfc_read_scope = PermissioningScope.READ_PRODUCTS
@@ -544,7 +546,7 @@ class CatalogItem(AbstractDFCModel):
         blank=True, null=True, rdf_type="dfc-b:stockLimitation"
     )
 
-    class Meta:
+    class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:CatalogItem"
         serializer_fields = [
             "@id",
@@ -582,7 +584,7 @@ class CustomerCategory(AbstractDFCModel):
         on_delete=models.CASCADE,
     )
 
-    class Meta:
+    class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:CustomerCategory"
         serializer_fields = ["@id", "proxy_of", "data_server_source", "name", "offers"]
         nested_fields = ["offers"]
@@ -599,7 +601,7 @@ class Price(AbstractDFCModel):
     # TODO: hasUnit should point to an RDF value and we could add a custom constraint for this.
     has_unit = fields.TextField(blank=True, null=True, rdf_type="dfc-b:hasUnit")
 
-    class Meta:
+    class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:Price"
         serializer_fields = [
             "@id",
@@ -648,7 +650,7 @@ class Offer(AbstractDFCModel):
         blank=True, null=True, rdf_type="dfc-b:stockLimitation"
     )
 
-    class Meta:
+    class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:Offer"
         serializer_fields = ["@id", "proxy_of", "data_server_source", "offered_for"]
         dfc_read_scope = PermissioningScope.READ_PRODUCTS
@@ -673,7 +675,7 @@ class Service(AbstractDFCModel):
         null=True,
     )
 
-    class Meta:
+    class Meta(AbstractDFCModel.Meta):
         rdf_type = "cqcm:Service"
         serializer_fields = [
             "@id",
@@ -711,7 +713,7 @@ class OrganizationService(AbstractDFCModel):
         on_delete=models.RESTRICT,
     )
 
-    class Meta:
+    class Meta(AbstractDFCModel.Meta):
         rdf_type = "cqcm:OrganizationService"
         serializer_fields = [
             "@id",
@@ -783,7 +785,7 @@ class PhysicalPlace(AbstractDFCModel):
     )
     URL = fields.TextField(rdf_type="dfc-b:URL", blank=True, null=True)
 
-    class Meta:
+    class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:PhysicalPlace"
         serializer_fields = [
             "proxy_of",
@@ -838,7 +840,7 @@ class Coordination(AbstractDFCModel):
         ),
     )
 
-    class Meta:
+    class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:Coordination"
         serializer_fields = [
             "@id",
@@ -885,7 +887,7 @@ class SaleSession(AbstractDFCModel):
     start_date = fields.DateTimeField(rdf_type="dfc-b:startDate", blank=True, null=True)
     end_date = fields.DateTimeField(rdf_type="dfc-b:endDate", blank=True, null=True)
 
-    class Meta:
+    class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:SaleSession"
         serializer_fields = [
             "@id",
@@ -927,7 +929,7 @@ class TemplateSaleSession(AbstractDFCModel):
         on_delete=models.SET_NULL,
     )
 
-    class Meta:
+    class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:TemplateSaleSession"
         serializer_fields = [
             "@id",
@@ -999,7 +1001,7 @@ class ShippingOption(AbstractDFCModel):
     start_date = fields.DateTimeField(rdf_type="dfc-b:startDate", blank=True, null=True)
     end_date = fields.DateTimeField(rdf_type="dfc-b:endDate", blank=True, null=True)
 
-    class Meta:
+    class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:ShippingOption"
         serializer_fields = [
             "@id",
