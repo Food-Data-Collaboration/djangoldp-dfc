@@ -529,7 +529,7 @@ class CatalogItem(AbstractDFCModel):
         on_delete=models.CASCADE,
     )
     # TODO: "references" should be a ForeignKey to any DefinedProduct implementation
-    #   https://git.startinblox.com/djangoldp-packages/djangoldp/-/issues/446
+    #   https://gitlab.com/sib-backup-temp/djangoldp/-/work_items/446
     references = fields.ForeignKey(
         SuppliedProduct,
         related_rdf_type="dfc-b:referencedBy",

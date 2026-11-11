@@ -10,7 +10,7 @@ def get_serializer_class(model, depth=2, extra_fields=None):
         serializer_class = LDPSerializerDFC
 
     # NOTE: LDPSerializer cannot be used without meta args:
-    #   https://git.startinblox.com/djangoldp-packages/djangoldp/-/issues/277
+    #   https://gitlab.com/sib-backup-temp/djangoldp/-/work_items/277
     meta_args = {
         "model": model,
         "depth": depth,
