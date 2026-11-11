@@ -104,6 +104,9 @@ class AbstractAgent(AbstractDFCModel):
         blank=True,
         null=True,
     )
+    # TODO: an Agent isMemberOf a CustomerCategory
+    #   DjangoLDP does not currently support mixed-model containers:
+    #   https://gitlab.com/sib-backup-temp/djangoldp/-/work_items/373
 
     class Meta(AbstractDFCModel.Meta):
         abstract = True
@@ -181,6 +184,7 @@ class Organization(AbstractAgent):
             "customer_categories",
             "shipping_options",
             "template_sale_sessions",
+            "certifications",
         ]
         nested_fields = [
             "addresses",
@@ -192,6 +196,7 @@ class Organization(AbstractAgent):
             "coordinations",
             "shipping_options",
             "template_sale_sessions",
+            "certifications",
         ]
         disable_url = True  # Disables DjangoLDP auto-url generation
         dfc_read_scope = PermissioningScope.READ_ENTERPRISE
@@ -907,6 +912,31 @@ class SaleSession(AbstractDFCModel):
         return f"{self.coordination} ({self.start_date} - {self.end_date})"
 
 
+class Vevent(AbstractDFCModel):
+    """
+    From the iCalendar ontology (w3.org/2002/12/cal/icaltzd).
+    Vevent provides a grouping of component properties that describe an event.
+    """
+
+    start_date = fields.DateTimeField(rdf_type="ical:dtstart", blank=True, null=True)
+    end_date = fields.DateTimeField(rdf_type="ical:dtend", blank=True, null=True)
+    occurs_at = fields.TextField(rdf_type="dfc-b:occursAt", blank=True, null=True)
+    rrule = fields.TextField(rdf_type="ical:rrule", blank=True, null=True)
+
+    class Meta(AbstractDFCModel.Meta):
+        rdf_type = "cal:Vevent"
+        serializer_fields = [
+            "@id",
+            "proxy_of",
+            "data_server_source",
+            "start_date",
+            "end_date",
+            "occurs_at",
+            "rrule",
+            "template_sale_sessions",
+        ]
+
+
 class TemplateSaleSession(AbstractDFCModel):
     organization = fields.ForeignKey(
         Organization,
@@ -928,6 +958,15 @@ class TemplateSaleSession(AbstractDFCModel):
         related_name="template_sale_sessions",
         on_delete=models.SET_NULL,
     )
+    occurs_at = fields.ForeignKey(
+        Vevent,
+        rdf_type="dfc-b:occursAt",
+        related_rdf_type="dfc-b:hasTemplateSaleSession",
+        blank=True,
+        null=True,
+        related_name="template_sale_sessions",
+        on_delete=models.CASCADE,
+    )
 
     class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:TemplateSaleSession"
@@ -937,6 +976,7 @@ class TemplateSaleSession(AbstractDFCModel):
             "data_server_source",
             "organization",
             "hosted_at",
+            "occurs_at",
         ]
         dfc_read_scope = PermissioningScope.READ_ORDERS
         dfc_write_scope = PermissioningScope.WRITE_ORDERS
@@ -1029,6 +1069,42 @@ class ShippingOption(AbstractDFCModel):
         ):
             self.organization = self.sale_session.coordination.organization
         return super().save(*args, **kwargs)
+
+
+class Certification(AbstractDFCModel):
+    certifies = fields.ForeignKey(
+        Organization,
+        rdf_type="dfc-b:certifies",
+        related_rdf_type="dfc-b:isCertifiedBy",
+        blank=True,
+        null=True,
+        related_name="certifications",
+        on_delete=models.CASCADE,
+    )
+    operatorid = fields.TextField(rdf_type="dfc-b:operatorid", blank=True, null=True)
+    certification_score = fields.TextField(
+        rdf_type="dfc-b:certificationScore", blank=True, null=True
+    )
+    certification_reference = fields.TextField(
+        rdf_type="dfc-b:certiferReference", blank=True, null=True
+    )
+
+    class Meta(AbstractDFCModel.Meta):
+        rdf_type = "dfc-b:Certification"
+        serializer_fields = [
+            "@id",
+            "proxy_of",
+            "data_server_source",
+            "certifies",
+            "operatorid",
+            "certification_score",
+            "certification_reference",
+        ]
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
+
+    def __str__(self):
+        return self.urlid
 
 
 class ResourceImportRecord(models.Model):
