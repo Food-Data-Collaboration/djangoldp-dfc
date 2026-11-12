@@ -157,7 +157,7 @@ class Organization(AbstractAgent):
     class Meta(AbstractAgent.Meta):
         rdf_type = "dfc-b:Organization"
         other_rdf_types = ["dfc-b:Enterprise"]
-        depth = 10
+        depth = 0
         serializer_fields = [
             "@id",
             "proxy_of",
