@@ -8,7 +8,10 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("data_food_consortium", "0044_model_meta_options"),
+        (
+            "data_food_consortium",
+            "0045_certification_vevent_templatesalesession_occurs_at",
+        ),
     ]
 
     operations = [
