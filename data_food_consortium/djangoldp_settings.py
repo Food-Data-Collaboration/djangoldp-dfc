@@ -3,7 +3,13 @@
 import os
 
 MIDDLEWARE = []
-INSTALLED_APPS = []
+INSTALLED_APPS = ["django_tagulous"]
+SERIALIZATION_MODULES = {
+    "xml": "django_tagulous.serializers.xml_serializer",
+    "json": "django_tagulous.serializers.json",
+    "python": "django_tagulous.serializers.python",
+    "yaml": "django_tagulous.serializers.pyyaml",
+}
 
 # NOTE: Package variables are prefixed DFC_XYZ
 
@@ -33,6 +39,7 @@ DFC_REQUESTED_SCOPES_DOCUMENT = (
 # granted access to by a data owner.
 DFC_USER_GRANTS_ENABLED = False
 
+LDP_BASE_ADMIN_CLASS = "data_food_consortium.admin.DjangoLDPAdmin"
 LDP_RDF_CONTEXT = (
     "https://cdn.jsdelivr.net/gh/datafoodconsortium/ontology/context/context_2.0.0.json"
 )

@@ -1,11 +1,25 @@
 from django.contrib import admin
 from django.core.exceptions import FieldDoesNotExist
-from djangoldp.admin import DjangoLDPAdmin
+from django_tagulous.admin import TaggedBaseModelAdminMixin
+from djangoldp.admin import CSVExportAdminMixin
+from guardian.admin import GuardedModelAdmin
 
 from data_food_consortium import models, models_common, models_permissioning
 from data_food_consortium.enums import ResourceImportSource, WebhookEventSource
 from data_food_consortium.proxy.resource import ProxyRefreshParser
 from data_food_consortium.proxy.webhook import WebhookProcessor
+
+
+class DjangoLDPAdmin(TaggedBaseModelAdminMixin, CSVExportAdminMixin, GuardedModelAdmin):
+    """
+    Override base class for admin classes, DjangoLDP wide.
+    Does not subclass DFCAdmin directly because of MRO problems arising from Tagulous'
+     methods injecting its mixin to custom admin classes.
+    """
+
+
+class DFCAdmin(DjangoLDPAdmin):
+    pass
 
 
 class DataServerGrantPolicyInline(admin.TabularInline):
@@ -16,16 +30,16 @@ class DataServerGrantPolicyInline(admin.TabularInline):
 
 
 @admin.register(models_common.DataServer)
-class DataServerAdmin(DjangoLDPAdmin):
+class DataServerAdmin(DFCAdmin):
     inlines = [DataServerGrantPolicyInline]
 
 
 @admin.register(models_common.Platform)
-class PlatformAdmin(DjangoLDPAdmin):
+class PlatformAdmin(DFCAdmin):
     pass
 
 
-class DFCModelAdmin(DjangoLDPAdmin):
+class DFCModelAdmin(DFCAdmin):
     list_display = ["urlid", "proxy_of", "updated_at"]
     list_filter = ["data_server_source"]
     search_fields = ["urlid", "proxy_of"]
@@ -210,7 +224,7 @@ class ShippingOptionAdmin(DFCModelAdmin):
 
 
 @admin.register(models_permissioning.AssignedScope)
-class AssignedScopeAdmin(DjangoLDPAdmin):
+class AssignedScopeAdmin(DFCAdmin):
     list_display = ["data_server", "scope", "platform", "user", "proxied_obj_urlid"]
     list_filter = ["scope"]
     raw_id_fields = ["user"]
@@ -223,7 +237,7 @@ class AssignedScopeAdmin(DjangoLDPAdmin):
 
 
 @admin.register(models_permissioning.GrantRequirement)
-class GrantRequirementAdmin(DjangoLDPAdmin):
+class GrantRequirementAdmin(DFCAdmin):
     list_display = ["name", "policy"]
     search_fields = ["name", "policy__name"]
 
