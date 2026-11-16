@@ -46,7 +46,7 @@ class TestOntologyFlexibility(TestCase):
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
 
-        response = self.client.get(instance.urlid)
+        response = self.client.get(instance.urlid, HTTP_DEPTH=1)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["@type"], "dfc-b:Organization")
         v2_address = response.data["dfc-b:hasAddress"]["ldp:contains"][0]
