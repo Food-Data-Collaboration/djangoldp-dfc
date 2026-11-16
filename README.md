@@ -4,7 +4,7 @@ The objective of this package is to provide DjangoLDP applications with all of t
 
 ## Core Features
 
-The [DjangoLDP](https://git.startinblox.com/djangoldp-packages/djangoldp) model definitions provide an implementation of the v2 of the [core DFC ontologies](https://github.com/datafoodconsortium/standard/tree/master). Models using this package are also capable of accepting v1 DFC data as input. The resulting viewset is able to perform CRUD operations on the ontology data, parsed and serialized in JSON-LD.
+The [DjangoLDP](https://codeberg.org/djangoldp/djangoldp) model definitions provide an implementation of the v2 of the [core DFC ontologies](https://github.com/datafoodconsortium/standard/tree/master). Models using this package are also capable of accepting v1 DFC data as input. The resulting viewset is able to perform CRUD operations on the ontology data, parsed and serialized in JSON-LD.
 
 ### User Authentication and Permissioning
 
@@ -84,5 +84,5 @@ The dfc-pt ontology will change over time, and this enum will need to be updated
 
 ### Running Tests
 
-* [Set up a sibserver with this package in system link](https://git.startinblox.com/documentation/doc/-/blob/master/source/import_documentation/djangoldp_guide/install-djangoldp-server.rst).
+* [Set up a sibserver with this package in system link](https://codeberg.org/stbx-framework/documentation/src/branch/master/source/import_documentation/djangoldp_guide/install-djangoldp-server.rst).
 * Run the test runner with: `python -m unittest data_food_consortium.tests.runner`.
