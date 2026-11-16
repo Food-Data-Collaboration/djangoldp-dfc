@@ -1,4 +1,5 @@
 from django.db import models
+from django_tagulous.models import TagField
 from djangoldp import fields
 from djangoldp_open_world_model.models import OpenWorldModel
 from rdflib import Graph
@@ -25,6 +26,11 @@ class AbstractDFCModel(OpenWorldModel):
         blank=True,
         null=True,
         rdf_type="dfc-t:dataServerSource",
+    )
+    perms_tags = TagField(
+        force_lowercase=True,
+        help_text="Labels for data used in permissions",
+        verbose_name="Permissions tags",
     )
     proxy_of = fields.TextField(rdf_type="dfc-t:proxyOf", blank=True, null=True)
 
