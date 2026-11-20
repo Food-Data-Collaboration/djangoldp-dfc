@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.test import TestCase, override_settings
 from djangoldp.models import Model
 from rest_framework.test import APIClient
@@ -5,16 +6,22 @@ from rest_framework.test import APIClient
 from data_food_consortium.auth_utils import user_oidc_provider
 from data_food_consortium.enums import PermissioningScope
 from data_food_consortium.models import Organization
-from data_food_consortium.models_permissioning import AssignedScope
+from data_food_consortium.models_permissioning import (
+    AssignedScope,
+    DataServerGrantPolicy,
+    UserTagGrant,
+)
 from data_food_consortium.tests.factories import (
+    DataServerFactory,
     DFCUserFactory,
+    GrantRequirementFactory,
     OrganizationFactory,
     PlatformFactory,
     SuppliedProductFactory,
 )
 
 
-class TestFiltersPermissioning(TestCase):
+class BaseFiltersTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = DFCUserFactory(is_superuser=False)
@@ -32,6 +39,8 @@ class TestFiltersPermissioning(TestCase):
             self.assertEqual(response.status_code, 404)
         return response
 
+
+class TestGrantFiltersPermissioning(BaseFiltersTest):
     def test_filter_disabled_by_setting(self):
         """
         By default, DFC_USER_GRANTS_ENABLED is False. This test ensures that it correctly disables
@@ -172,3 +181,89 @@ class TestFiltersPermissioning(TestCase):
         self.assertEqual(
             supplied_product_serialization[0]["@id"], granted_product.urlid
         )
+
+    @override_settings(
+        DFC_USER_GRANTS_ENABLED=True,
+        MIDDLEWARE=[
+            *settings.MIDDLEWARE,
+            "data_food_consortium.tests.middleware.InjectUserClaimsMiddleware",
+        ],
+        TEST_USER_CLAIMS={
+            "webid": "https://keycloak.example.com/users/1/",
+            "groups": [{"name": "Agriculture Scotland"}],
+        },
+    )
+    def test_grant_policy_requires_group_membership(self):
+        # Set up a Data Server which requires membership to Agriculture Scotland.
+        gr_a = GrantRequirementFactory(
+            claim_jmes_path="groups[?name=='Agriculture Scotland'] | [0]"
+        )
+        agriculture_scotland_ds = DataServerFactory()
+        DataServerGrantPolicy.objects.create(
+            data_server=agriculture_scotland_ds, policy=gr_a.policy
+        )
+        agr_scotland_org = OrganizationFactory(
+            data_server_source=agriculture_scotland_ds
+        )
+
+        # Set up another Data Server with a requirement I do not meet.
+        gr_b = GrantRequirementFactory(
+            claim_jmes_path="groups[?name=='Agriculture Wales'] | [0]"
+        )
+        agriculture_wales_ds = DataServerFactory()
+        DataServerGrantPolicy.objects.create(
+            data_server=agriculture_wales_ds, policy=gr_b.policy
+        )
+        agr_wales_org = OrganizationFactory(data_server_source=agriculture_wales_ds)
+
+        # Make requests to test these conditions.
+        response = self.client.get(
+            Model.resource(Organization), content_type="application/ld+json"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["ldp:contains"]), 1)
+        self.assertEqual(
+            response.data["ldp:contains"][0]["@id"], agr_scotland_org.urlid
+        )
+        self._test_direct_resource_access(agr_scotland_org, True)
+        self._test_direct_resource_access(agr_wales_org, False)
+
+
+class TestTagsFiltersPermissioning(BaseFiltersTest):
+    @override_settings(DFC_USER_GRANTS_ENABLED=True)
+    def test_tags_access(self):
+        # A DataServer can set up some tags for a resource.
+        ds = DataServerFactory()
+        org_in = OrganizationFactory(
+            perms_tags="test, second_test", data_server_source=ds
+        )
+        org_out = OrganizationFactory(data_server_source=ds)
+
+        # A DataServer can award a user access to a given tag.
+        UserTagGrant.objects.create(data_server=ds, user=self.user, tags="test")
+
+        response = self.client.get(
+            Model.resource(Organization), content_type="application/ld+json"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["ldp:contains"]), 1)
+        self.assertEqual(response.data["ldp:contains"][0]["@id"], org_in.urlid)
+        self._test_direct_resource_access(org_in, True)
+        self._test_direct_resource_access(org_out, False)
+
+    @override_settings(DFC_USER_GRANTS_ENABLED=True)
+    def test_tags_data_server_specific(self):
+        """
+        A DataServer cannot use tags to grant a user resources from the same tag,
+        on another dataserver.
+        """
+        ds = DataServerFactory()
+        UserTagGrant.objects.create(data_server=ds, user=self.user, tags="test")
+        org = OrganizationFactory(perms_tags="test")
+
+        response = self.client.get(
+            Model.resource(Organization), content_type="application/ld+json"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["ldp:contains"]), 0)
+        self._test_direct_resource_access(org, False)

@@ -3,7 +3,13 @@
 import os
 
 MIDDLEWARE = []
-INSTALLED_APPS = []
+INSTALLED_APPS = ["django_tagulous"]
+SERIALIZATION_MODULES = {
+    "xml": "django_tagulous.serializers.xml_serializer",
+    "json": "django_tagulous.serializers.json",
+    "python": "django_tagulous.serializers.python",
+    "yaml": "django_tagulous.serializers.pyyaml",
+}
 
 # NOTE: Package variables are prefixed DFC_XYZ
 
@@ -11,6 +17,13 @@ INSTALLED_APPS = []
 KEYCLOAK_URL = f"{os.getenv('KEYCLOAK_URL')}/realms/{os.getenv('KEYCLOAK_REALM')}/protocol/openid-connect/token"
 KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID")
 KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET")
+
+# Override authentication backends at package level.
+AUTHENTICATION_BACKENDS = [
+    "djangoldp_account.auth.backends.EmailOrUsernameAuthBackend",
+    "guardian.backends.ObjectPermissionBackend",
+    "data_food_consortium.auth_backends.KeycloakUserBackend",
+]
 
 # Set to False to disable storing logs of dataserver imports in the database.
 DFC_STORE_IMPORT_REPORTS = True
@@ -26,6 +39,7 @@ DFC_REQUESTED_SCOPES_DOCUMENT = (
 # granted access to by a data owner.
 DFC_USER_GRANTS_ENABLED = False
 
+LDP_BASE_ADMIN_CLASS = "data_food_consortium.admin.DjangoLDPAdmin"
 LDP_RDF_CONTEXT = (
     "https://cdn.jsdelivr.net/gh/datafoodconsortium/ontology/context/context_2.0.0.json"
 )
