@@ -13,6 +13,7 @@ from data_food_consortium.enums import (
     WebhookEventSource,
 )
 from data_food_consortium.models_common import DataServer
+from data_food_consortium.models_permissioning import DFCPermissionTag
 from data_food_consortium.permissions import DFCPermission
 
 
@@ -28,7 +29,7 @@ class AbstractDFCModel(OpenWorldModel):
         rdf_type="dfc-t:dataServerSource",
     )
     perms_tags = TagField(
-        force_lowercase=True,
+        to=DFCPermissionTag,
         help_text="Labels for data used in permissions",
         verbose_name="Permissions tags",
     )

@@ -242,6 +242,21 @@ class GrantRequirementAdmin(DFCAdmin):
     search_fields = ["name", "policy__name"]
 
 
+@admin.register(models_permissioning.UserTagGrant)
+class UserTagGrantAdmin(DFCAdmin):
+    list_display = ["user", "data_server"]
+    raw_id_fields = ["user"]
+    search_fields = [
+        "tags__name",
+        "data_server__urlid",
+        "user__urlid",
+        "user__username",
+        "user__email",
+        "user__first_name",
+        "user__last_name",
+    ]
+
+
 @admin.action(description="Retry import")
 def retry_import(modeladmin, request, queryset):
     for record in queryset:

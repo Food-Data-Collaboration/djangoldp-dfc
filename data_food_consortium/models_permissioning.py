@@ -2,6 +2,7 @@ import jmespath
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+from django_tagulous.models import TagField, TagModel
 from djangoldp import fields
 from djangoldp.models import LDPModelManager, Model
 
@@ -198,3 +199,32 @@ class DataServerGrantPolicy(Model):
 
     def __str__(self):
         return f"{self.data_server} policy {self.policy}"
+
+
+class DFCPermissionTag(TagModel):
+    class TagMeta:
+        force_lowercase = True
+
+
+class UserTagGrant(Model):
+    """
+    A User, granted a tag by a DataServer, is granted access to any resources with that tag.
+    """
+
+    data_server = models.ForeignKey(
+        DataServer, on_delete=models.CASCADE, related_name="granted_tags"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="dfc_tags"
+    )
+    tags = TagField(
+        to=DFCPermissionTag,
+        help_text="Labels for data used in permissions",
+        verbose_name="Permissions tags",
+    )
+
+    class Meta(Model.Meta):
+        unique_together = ["data_server", "user"]
+
+    def __str__(self):
+        return f"Tags for user {self.user} from {self.data_server}"

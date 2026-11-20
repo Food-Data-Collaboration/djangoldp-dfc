@@ -21,6 +21,11 @@ class DFCPermission(LDPBasePermission):
                 return False
         return True
 
+    def user_has_tag_for_object_from_data_server(self, request, obj):
+        return (
+            len(set(request.user.dfc_tags.all()).intersection(set(obj.perms_tags))) > 0
+        )
+
     def has_object_permission(self, request, view, obj):
         if not settings.DFC_USER_GRANTS_ENABLED or request.user.is_superuser:
             return True
@@ -28,5 +33,7 @@ class DFCPermission(LDPBasePermission):
             self.get_assigned_scopes_for_obj(request, type(obj), obj).count() > 0
         )
         return (
-            has_valid_grant or self.user_passes_all_data_server_policies(request, obj)
+            has_valid_grant
+            or self.user_passes_all_data_server_policies(request, obj)
+            or self.user_has_tag_for_object_from_data_server(request, obj)
         ) and super().has_object_permission(request, view, obj)
