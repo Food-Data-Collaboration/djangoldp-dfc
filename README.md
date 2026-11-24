@@ -10,9 +10,27 @@ The [DjangoLDP](https://codeberg.org/djangoldp/djangoldp) model definitions prov
 
 Platforms consume data which has been granted to it by a partner data-server, the producer of data. The Platform behaves as a custodian of that data, sharing information publicly which has been granted to do so, and sharing it with individual authenticated users, when it has been allowed to do so.
 
-By default, this package will display all data shared with the platform to any visitor. By setting `DFC_USER_GRANTS_ENABLED` to `True` (via your settings.yml), you can change this behaviour so that a request needs to be authenticated, and the user needs to have been granted access to the data by the data owner.
+Data on a DFC platform is by default is public, meaning your site will display all data shared with the platform to any visitor. To make data private by default, set `settings.DFC_USER_GRANTS_ENABLED` to `True` (via your settings.yml). Once set, a user will need to be authenticated, and granted access to present data by the data owner.
 
-If you are using user authentication, it is required that your user model includes a unique field, `urlid` (the user WebID). For this purpose, and for supporting authentication/OIDC, we recommend using the auth package, DjangoLDP-Account, with the user model `djangoldp_account.models.LDPUser`.
+Users, like platforms and data servers, are authenticated using OIDC and Keycloak. If you are using user authentication, it is required that your user model includes a unique field, `urlid` (the user WebID). For this purpose, and for supporting authentication/OIDC, we recommend using the auth package, DjangoLDP-Account, with the user model `djangoldp_account.models.LDPUser`.
+
+### Permissioning objects
+
+Data servers can grant access to individual objects to a platform as a whole, or to individual users. They can also grant conditional access, using **Grant requirements**, or by labelling objects with **tags** (user groups).
+
+#### Granting object permissions to a user
+
+To grant access to an object to an individual user, the data server can create an `AssignedScope` object with the `proxied_obj_urlid`, `scope`, and `user` relations set accordingly.
+
+The user's platform is the domain where their `urlid` is hosted. To assign a scope to all users of a given platform, the data server can create an `AssignedScope` and use the `platform` relation in place of `user`. All users provided by the platform will inherit access.
+
+#### Granting permissions to groups of users
+
+To provide a simple means of granting access to multiple groups of objects to multiple users, data servers can mark their objects with a `perms_tags`, comma-separated string (a field which is backed by [django-tagulous](https://django-tagulous.readthedocs.io/en/latest/) in implementation). They can then create a `UserTagsGrant` to grant the same tag to specific users on the platform.
+
+#### Granting permissions conditionally (based on user claims)
+
+To provide a means of defining flexible conditions for access to **all** of a data server's objects to a user based on the user claims, we allow for the data server to create one or more `GrantRequirement` objects, defining [JMES Path](https://github.com/jmespath/jmespath.py) expressions which must evaluate to a value which is not null (which must be present) on the user claims. This is then grouped into a `GrantPolicy`, which can be used in a `DataServerGrantPolicy`.
 
 ## Installation
 
