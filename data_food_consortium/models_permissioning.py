@@ -116,10 +116,6 @@ class GrantRequirement(Model):
     claim_jmes_path = models.TextField(
         help_text="JMESPath expression on the standard user claims"
     )
-    requires_false = models.BooleanField(
-        default=False,
-        help_text="The condition described by this requirement must not be met (applies a NOT in boolean logic).",
-    )
     policy = models.ForeignKey(
         "GrantPolicy",
         verbose_name="Grant policy",
@@ -155,10 +151,6 @@ class GrantPolicy(Model):
 
     name = models.CharField(
         max_length=32, help_text="A short unique identifier with no spaces", unique=True
-    )
-    requires_false = models.BooleanField(
-        default=False,
-        help_text="The condition described by this policy must not be met (applies a NOT in boolean logic).",
     )
 
     class Meta(Model.Meta):
