@@ -28,6 +28,10 @@ The user's platform is the domain where their `urlid` is hosted. To assign a sco
 
 To provide a simple means of granting access to multiple groups of objects to multiple users, data servers can mark their objects with a `perms_tags`, comma-separated string (a field which is backed by [django-tagulous](https://django-tagulous.readthedocs.io/en/latest/) in implementation). They can then create a `UserTagsGrant` to grant the same tag to specific users on the platform.
 
+#### Granting permissions conditionally (based on user claims)
+
+To provide a means of defining flexible conditions for access to **all** of a data server's objects to a user based on the user claims, we allow for the data server to create one or more `GrantRequirement` objects, defining [JMES Path](https://github.com/jmespath/jmespath.py) expressions which must evaluate to a value which is not null (which must be present) on the user claims. This is then grouped into a `GrantPolicy`, which can be used in a `DataServerGrantPolicy`.
+
 ## Installation
 
 Add to your `dependencies` and `ldppackages` in `settings.yml`. Make sure that this package is installed before DjangoLDP-Account (if you are using it), or else the middleware settings may conflict.
