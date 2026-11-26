@@ -2,10 +2,20 @@ from django.contrib import admin
 from django.core.exceptions import FieldDoesNotExist
 from djangoldp.admin import DjangoLDPAdmin
 
-from data_food_consortium import models
+from data_food_consortium import models, models_common, models_permissioning
 from data_food_consortium.enums import ResourceImportSource, WebhookEventSource
 from data_food_consortium.proxy.resource import ProxyRefreshParser
 from data_food_consortium.proxy.webhook import WebhookProcessor
+
+
+@admin.register(models_common.DataServer)
+class DataServerAdmin(DjangoLDPAdmin):
+    pass
+
+
+@admin.register(models_common.Platform)
+class PlatformAdmin(DjangoLDPAdmin):
+    pass
 
 
 class DFCModelAdmin(DjangoLDPAdmin):
@@ -190,6 +200,19 @@ class ShippingOptionAdmin(DFCModelAdmin):
     list_display = ["urlid", "sale_session", "has_type"]
     list_filter = ["has_type"]
     raw_id_fields = ["sale_session", "picked_up_at", "delivers_at"]
+
+
+@admin.register(models_permissioning.AssignedScope)
+class AssignedScopeAdmin(DjangoLDPAdmin):
+    list_display = ["data_server", "scope", "platform", "user", "proxied_obj_urlid"]
+    list_filter = ["scope"]
+    raw_id_fields = ["user"]
+    search_fields = [
+        "user__urlid",
+        "platform__urlid",
+        "data_server__urlid",
+        "proxied_obj_urlid",
+    ]
 
 
 @admin.action(description="Retry import")
