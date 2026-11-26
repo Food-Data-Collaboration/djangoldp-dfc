@@ -54,13 +54,6 @@ class Migration(migrations.Migration):
                         unique=True,
                     ),
                 ),
-                (
-                    "requires_false",
-                    models.BooleanField(
-                        default=False,
-                        help_text="The condition described by this policy must not be met (applies a NOT in boolean logic).",
-                    ),
-                ),
             ],
             options={
                 "abstract": False,
@@ -172,13 +165,6 @@ class Migration(migrations.Migration):
                     "claim_jmes_path",
                     models.TextField(
                         help_text="JMESPath expression on the standard user claims"
-                    ),
-                ),
-                (
-                    "requires_false",
-                    models.BooleanField(
-                        default=False,
-                        help_text="The condition described by this requirement must not be met (applies a NOT in boolean logic).",
                     ),
                 ),
                 (
