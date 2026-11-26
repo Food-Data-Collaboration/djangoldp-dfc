@@ -1,4 +1,8 @@
+import string
+
 from data_food_consortium.serializers import LDPSerializerDFC
+
+whitespace_dict = {ord(ws): None for ws in string.whitespace}
 
 
 def get_serializer_class(model, depth=2, extra_fields=None):
