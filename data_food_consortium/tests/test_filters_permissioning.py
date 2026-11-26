@@ -5,8 +5,9 @@ from rest_framework.test import APIClient
 from data_food_consortium.auth_utils import user_oidc_provider
 from data_food_consortium.enums import PermissioningScope
 from data_food_consortium.models import Organization
-from data_food_consortium.models_permissioning import AssignedScope
+from data_food_consortium.models_permissioning import AssignedScope, UserTagGrant
 from data_food_consortium.tests.factories import (
+    DataServerFactory,
     DFCUserFactory,
     OrganizationFactory,
     PlatformFactory,
@@ -172,3 +173,41 @@ class TestFiltersPermissioning(TestCase):
         self.assertEqual(
             supplied_product_serialization[0]["@id"], granted_product.urlid
         )
+
+    @override_settings(DFC_USER_GRANTS_ENABLED=True)
+    def test_tags_access(self):
+        # A DataServer can set up some tags for a resource.
+        ds = DataServerFactory()
+        org_in = OrganizationFactory(
+            perms_tags="test, second_test", data_server_source=ds
+        )
+        org_out = OrganizationFactory(data_server_source=ds)
+
+        # A DataServer can award a user access to a given tag.
+        UserTagGrant.objects.create(data_server=ds, user=self.user, tags="test")
+
+        response = self.client.get(
+            Model.resource(Organization), content_type="application/ld+json"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["ldp:contains"]), 1)
+        self.assertEqual(response.data["ldp:contains"][0]["@id"], org_in.urlid)
+        self._test_direct_resource_access(org_in, True)
+        self._test_direct_resource_access(org_out, False)
+
+    @override_settings(DFC_USER_GRANTS_ENABLED=True)
+    def test_tags_data_server_specific(self):
+        """
+        A DataServer cannot use tags to grant a user resources from the same tag,
+        on another dataserver.
+        """
+        ds = DataServerFactory()
+        UserTagGrant.objects.create(data_server=ds, user=self.user, tags="test")
+        org = OrganizationFactory(perms_tags="test")
+
+        response = self.client.get(
+            Model.resource(Organization), content_type="application/ld+json"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["ldp:contains"]), 0)
+        self._test_direct_resource_access(org, False)
