@@ -12,6 +12,13 @@ KEYCLOAK_URL = f"{os.getenv('KEYCLOAK_URL')}/realms/{os.getenv('KEYCLOAK_REALM')
 KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID")
 KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET")
 
+# Override authentication backends at package level.
+AUTHENTICATION_BACKENDS = [
+    "djangoldp_account.auth.backends.EmailOrUsernameAuthBackend",
+    "guardian.backends.ObjectPermissionBackend",
+    "data_food_consortium.auth_backends.KeycloakUserBackend",
+]
+
 # Set to False to disable storing logs of dataserver imports in the database.
 DFC_STORE_IMPORT_REPORTS = True
 
