@@ -33,6 +33,7 @@ class AbstractDFCModel(OpenWorldModel):
         to=DFCPermissionTag,
         help_text="Labels for data used in permissions",
         verbose_name="Permissions tags",
+        blank=True,
     )
 
     class Meta(OpenWorldModel.Meta):
