@@ -106,14 +106,12 @@ class AbstractAgent(AbstractDFCModel):
         blank=True,
         null=True,
     )
+    # NOTE: websitePage is deprecated in the ontology.
     website_page = fields.TextField(
         rdf_type="dfc-b:websitePage",
         blank=True,
         null=True,
     )
-    # TODO: an Agent isMemberOf a CustomerCategory
-    #   DjangoLDP does not currently support mixed-model containers:
-    #   https://gitlab.com/sib-backup-temp/djangoldp/-/work_items/373
 
     class Meta(AbstractDFCModel.Meta):
         abstract = True
@@ -160,6 +158,9 @@ class Organization(AbstractAgent):
         null=True,
         help_text="Indicates whether the entity charges VAT or not",
     )  # xsd:Boolean
+    org_categories = fields.ManyToManyField(
+        "OrganizationCategory", blank=True, related_name="organizations"
+    )
 
     class Meta(AbstractAgent.Meta):
         rdf_type = "dfc-b:Organization"
@@ -187,6 +188,7 @@ class Organization(AbstractAgent):
             "affiliated_to",
             "catalog_items",
             "services",
+            "org_categories",
             "coordinations",
             "customer_categories",
             "shipping_options",
@@ -200,6 +202,7 @@ class Organization(AbstractAgent):
             "affiliated_to",
             "catalog_items",
             "services",
+            "org_categories",
             "coordinations",
             "shipping_options",
             "template_sale_sessions",
@@ -292,6 +295,9 @@ class SocialMedia(AbstractDFCModel):
 
 
 class Person(AbstractAgent):
+    # TODO: both affiliates, and isMemberOf, should have the domain Agent, not Person.
+    #   DjangoLDP does not currently support mixed-model containers:
+    #   https://gitlab.com/sib-backup-temp/djangoldp/-/work_items/373
     affiliates = fields.ForeignKey(
         Organization,
         rdf_type="dfc-b:affiliates",
@@ -300,6 +306,13 @@ class Person(AbstractAgent):
         null=True,
         related_name="affiliated_to",
         on_delete=models.SET_NULL,
+    )
+    is_member_of = fields.ManyToManyField(
+        "CustomerCategory",
+        rdf_type="dfc-b:isMemberOf",
+        related_rdf_type="dfc-b:hasMember",
+        blank=True,
+        related_name="has_member",
     )
     first_name = fields.TextField(
         rdf_type="dfc-b:firstName",
@@ -328,6 +341,7 @@ class Person(AbstractAgent):
             "promo_image_url",
             "phone_number",
             "places",
+            "is_member_of",
         ]
         nested_fields = ["affiliates", "places"]
         dfc_read_scope = PermissioningScope.READ_ENTERPRISE
@@ -598,7 +612,14 @@ class CustomerCategory(AbstractDFCModel):
 
     class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:CustomerCategory"
-        serializer_fields = ["@id", "proxy_of", "data_server_source", "name", "offers"]
+        serializer_fields = [
+            "@id",
+            "proxy_of",
+            "data_server_source",
+            "name",
+            "has_member",
+            "offers",
+        ]
         nested_fields = ["offers"]
         container_path = "customer_categories"
         dfc_read_scope = PermissioningScope.READ_ENTERPRISE
@@ -744,6 +765,40 @@ class OrganizationService(AbstractDFCModel):
         return f"{self.service.name} ({self.organization})"
 
 
+class OrganizationCategory(AbstractDFCModel):
+    """
+    A categorization of Organization, for example a dairy farm.
+
+    NOTE: This model isn't currently a part of the DFC standard, and was added early
+    for the LWA use-case. To reflect this, it uses the LWA namespace for now. When it is
+    added to the DFC standard, the namespace should be replaced and data migrated.
+    """
+
+    name = fields.TextField(
+        rdf_type="dfc-b:name",
+        blank=True,
+        null=True,
+    )
+
+    class Meta(AbstractDFCModel.Meta):
+        rdf_type = "lwa:OrganizationCategory"
+        serializer_fields = [
+            "@id",
+            "proxy_of",
+            "data_server_source",
+            "created_at",
+            "updated_at",
+            "name",
+            "organizations",
+        ]
+        nested_fields = ["organizations"]
+        dfc_read_scope = PermissioningScope.READ_ENTERPRISE
+        dfc_write_scope = PermissioningScope.WRITE_ENTERPRISE
+
+    def __str__(self):
+        return self.name
+
+
 class PhysicalPlaceAddress(AbstractAddress):
     class Meta(AbstractAddress.Meta):
         rdf_type = "dfc-b:Address"
@@ -796,6 +851,12 @@ class PhysicalPlace(AbstractDFCModel):
         null=True,
     )
     URL = fields.TextField(rdf_type="dfc-b:URL", blank=True, null=True)
+    # TODO: is_virtual flag is a workaround for polymorphic container support.
+    #   https://gitlab.com/sib-backup-temp/djangoldp/-/work_items/373
+    is_virtual = fields.BooleanField(
+        default=False,
+        help_text="A temporary flag for VirtualPlace. Later this will be migrated automatically to a new model",
+    )
 
     class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:PhysicalPlace"
@@ -809,6 +870,7 @@ class PhysicalPlace(AbstractDFCModel):
             "URL",
             "sale_sessions",
             "template_sale_sessions",
+            "is_virtual",
         ]
         dfc_read_scope = PermissioningScope.READ_ORDERS
         dfc_write_scope = PermissioningScope.WRITE_ORDERS
@@ -957,8 +1019,8 @@ class TemplateSaleSession(AbstractDFCModel):
     hosted_at = fields.ForeignKey(
         PhysicalPlace,
         rdf_type="dfc-b:hostedAt",
-        # TODO: dfc-b:hosts should serve both SaleSession and TemplateSaleSession objects.
-        #  this is currently not supported in DjangoLDP
+        # TODO: should use dfc-b:hosts, serving both SaleSession and TemplateSaleSession objects.
+        #  https://gitlab.com/sib-backup-temp/djangoldp/-/work_items/373
         # related_rdf_type="dfc-b:hosts",
         blank=True,
         null=True,
