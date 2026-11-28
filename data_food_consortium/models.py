@@ -858,6 +858,14 @@ class PhysicalPlace(AbstractDFCModel):
         default=False,
         help_text="A temporary flag for VirtualPlace. Later this will be migrated automatically to a new model",
     )
+    has_geojson_feature = fields.ForeignKey(
+        "GeoFeature",
+        rdf_type="dfc-b:hasGeoJsonFeature",
+        blank=True,
+        null=True,
+        related_name="places",
+        on_delete=models.SET_NULL,
+    )
 
     class Meta(AbstractDFCModel.Meta):
         rdf_type = "dfc-b:PhysicalPlace"
@@ -872,6 +880,7 @@ class PhysicalPlace(AbstractDFCModel):
             "sale_sessions",
             "template_sale_sessions",
             "is_virtual",
+            "has_geojson_feature",
         ]
         dfc_read_scope = PermissioningScope.READ_ORDERS
         dfc_write_scope = PermissioningScope.WRITE_ORDERS
@@ -1175,6 +1184,11 @@ class Certification(AbstractDFCModel):
 
     def __str__(self):
         return self.urlid
+
+
+#
+#   Operational models (not part of the DFC standard implementation)
+#
 
 
 class ResourceImportRecord(models.Model):

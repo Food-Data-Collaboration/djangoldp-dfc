@@ -7,5 +7,6 @@ class DataFoodConsortiumConfig(AppConfig):
     def ready(self):
         from data_food_consortium import (
             models_common,
+            models_geojson,
             models_permissioning,
         )
